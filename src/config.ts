@@ -48,6 +48,13 @@ export interface VitePluginImportMapsConfig {
    */
   buildOptions?: ImportMapsBuildOptions;
   /**
+   * Whether to inject the import map in to the main HTML file. Defaults to true.
+   *
+   * NOTE: You probably have to set `false` in apps with SSR enabled,
+   * and use the `virtual:importmap` dynamic import instead.
+   */
+  injectImportMapsInHtml?: boolean;
+  /**
    * Transform the resolved import map `imports` before writing it to the HTML file
    */
   importMapHtmlTransformer?: (

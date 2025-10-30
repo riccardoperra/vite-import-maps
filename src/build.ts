@@ -27,7 +27,7 @@ export function pluginImportMapsBuildEnv(
   const plugins: Array<Plugin> = [];
 
   const resolvedBuildOptions: Required<ImportMapsBuildOptions> = {
-    strategy: buildOptions.strategy ?? "entry-as-input",
+    strategy: buildOptions.strategy ?? "virtual-modules",
   };
 
   for (const dep of store.sharedDependencies) {

@@ -64,7 +64,7 @@ export class VitePluginImportMapsStore {
     return {
       name: entry.name,
       entry: entry.entry,
-      localFile: entry.entry.includes("."),
+      localFile: entry.entry.startsWith("./") || entry.entry.startsWith("../"),
     };
   }
 
