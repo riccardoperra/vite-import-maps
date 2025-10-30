@@ -1,5 +1,5 @@
 {
-  "name": "solidjs-remote-counter",
+  "name": "react-remote-counter",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,11 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "solid-js": "^1.9.10"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "typescript": "~5.9.3",
     "vite": "^7.1.12",
-    "vite-plugin-solid": "^2.11.10"
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react-swc": "^3.8.0"
   }
 }
