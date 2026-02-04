@@ -1,5 +1,11 @@
 # vite-plugin-native-import-maps
 
+## 0.1.2
+
+### Patch Changes
+
+- 2490e79: Improve importMapHtmlTransformer signature
+
 ## 0.1.1
 
 ### Patch Changes
