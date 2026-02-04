@@ -233,16 +233,8 @@ export default defineConfig({
 ```ts
 vitePluginNativeImportMaps({
   shared: ["react"],
+  // serves /import-map.json
   outputAsFile: true, // serves/emits /import-map.json
-});
-```
-
-or
-
-```ts
-vitePluginNativeImportMaps({
-  shared: ["react"],
-  outputAsFile: "my-import-map", // serves/emits /my-import-map.json
 });
 ```
 
@@ -254,10 +246,6 @@ vitePluginNativeImportMaps({
 
 Set `injectImportMapsToHtml: false` and inject it in your SSR HTML yourself.
 Use `virtual:importmap` to read the resolved import map.
-
-### “URLs include `?v=...` in dev and change on reload”
-
-That’s expected. Vite uses cache-busting query strings during development.
 
 ### “A specifier resolves to the wrong module”
 
