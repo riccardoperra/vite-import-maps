@@ -2,59 +2,83 @@
 
 A Vite plugin that generates and keeps **browser import maps** in sync with your Vite dev server and production build.
 
-It’s aimed at **micro-frontends**, **plugin systems**, and any setup where you load ESM modules at runtime and want to:
+It's aimed at **micro-frontends**, **plugin systems**, and any setup where you load ESM modules at runtime and want to:
 
-- share dependencies (React/Solid/etc.) **without CDNs**
-- avoid bundling multiple copies of the same library
-- expose either npm packages or **your own local entry modules** through an import map
-- keep **remote modules truly “native”**: remotes can be shipped as plain ESM files, **without requiring a build step or special bundler plugins**
+- Share dependencies (React, Solid, etc.) **without relying on CDNs**
+- Avoid bundling multiple copies of the same library
+- Expose npm packages or **your own local entry modules** through an import map
+- Keep **remote modules truly "native"**: remotes can be plain ESM files **without requiring a build step or special
+  plugins**
 
 ---
 
-## Table of contents
+## Table of Contents
 
-- [Do you need this plugin?](#do-you-need-this-plugin)
-- [Quick start](#quick-start)
+- [Do You Need This Plugin?](#do-you-need-this-plugin)
+- [Quick Start](#quick-start)
 - [Installation](#installation)
 - [Configuration](#configuration)
-- [What the plugin outputs](#what-the-plugin-outputs)
+- [What the Plugin Outputs](#what-the-plugin-outputs)
 - [Recipes](#recipes)
 - [Troubleshooting](#troubleshooting)
-- [How it works (high level)](#how-it-works-high-level)
+- [How It Works](#how-it-works)
 - [Examples](#examples)
 - [License](#license)
 
 ---
 
-## Do you need this plugin?
+## Do You Need This Plugin?
 
-If you’re considering [import maps](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap),
-you’re likely working on a micro-frontend architecture or a plugin system where:
+If you're considering [import maps](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap),
+you're likely building one of the following:
 
-- a **host** app loads “remote” modules at runtime (plain ESM files, not bundled together)
-- host and remotes should **reuse the same dependency instances**
+- **Micro-frontend architecture** — A host app loads remote modules at runtime, and all parts need to share the same dependency instances (React, Solid, etc.)
+- **Plugin system** — Your app dynamically loads user-provided or third-party modules that rely on shared libraries
+- **Self-hosted dependency sharing** — You want to share dependencies across apps without relying on external CDN services like esm.sh or jspm.io
 
-Tools like [Module Federation](https://module-federation.io/) are great, but can be overkill if your needs are mostly “resolve these specifiers to these URLs”.
+### Why Not Third-Party Services?
 
-A big advantage of import maps is that **remotes don’t need any specific build step**.
-They can be published as “native” JavaScript modules (ESM) and will still be able to import shared dependencies via specifiers like `react`.
+Services like [esm.sh](https://esm.sh) or [jspm.io](https://jspm.io) are convenient, but they come with trade-offs:
 
-> If a remote *does* use a bundler, it’s important that shared deps are configured as **external**;
-> otherwise the remote will bundle its own copy and you’ll lose the “single instance” benefit.
+- **External dependency** — Your app relies on a third-party service you don't control. If it goes down or changes, your app breaks.
+- **Network restrictions** — Many corporate environments, VPNs, and air-gapped networks block connections to public services. Your app simply won't work.
+- **Version alignment** — Ensuring host and remotes use the exact same dependency version from an external source can be error-prone.
+- **Limited flexibility** — You can't easily expose modified builds, subsets of exports, or local wrapper modules.
 
-### Why import maps + Vite?
+With this plugin, **your host app becomes the source of truth**. Shared dependencies are built and served from your own infrastructure.
 
-Import maps are a browser standard that controls how module specifiers are resolved.
-They’re simple, but managing them manually is annoying:
+### Why This Plugin?
 
-- “which URL should `react` point to in dev?”
-- “which chunk filename should it point to in production (with hashing)?”
-- “how do I keep host + remotes aligned, so I don’t load React twice?”
+**Works in both development and production**
 
-This plugin integrates import maps with Vite so the host can expose shared modules as real Vite-built artifacts.
+Most import map solutions only work at build time. This plugin keeps the import map in sync with Vite's dev server *and* production builds. During development, it resolves to Vite's optimized deps; in production, it points to the correct hashed chunk filenames. No manual updates, no mismatches.
 
+**No build step required for remotes**
 
-Example of the kind of import map it keeps up to date:
+Remote modules can be plain ESM files—no bundler, no plugins, no special conventions. They just `import "your-lib"` and the browser resolves it via the import map provided by the host.
+
+**Single dependency instance**
+
+Host and all remotes share the exact same module instances.
+
+**Full control over what you share**
+
+Expose npm packages as-is, or provide custom wrapper modules, modified builds, or local files. You decide exactly what each specifier resolves to.
+
+> **Note:** If a remote *does* use a bundler, shared dependencies must be marked as **external**.
+> Otherwise the remote bundles its own copy and you lose the single-instance benefit.
+
+### Why Vite?
+
+Import maps are simple in concept, but keeping them in sync with your build is tedious:
+
+- In dev, Vite serves optimized deps from `node_modules/.vite/deps` with cache-busting hashes
+- In production, chunks have content hashes in their filenames
+- Manually updating the import map every time something changes is error-prone
+
+This plugin handles all of that. You declare what to share, and it generates the correct import map for both dev and build—automatically.
+
+**Example output:**
 
 ```html
 <script type="importmap">
@@ -65,33 +89,6 @@ Example of the kind of import map it keeps up to date:
     }
   }
 </script>
-```
-
----
-
-## Quick start
-
-```ts
-import { defineConfig } from "vite";
-import { vitePluginNativeImportMaps } from "vite-plugin-native-import-maps";
-
-export default defineConfig({
-  plugins: [
-    vitePluginNativeImportMaps({
-      shared: [
-        "react",
-        "react-dom",
-
-        // You can also expose a custom/local entry under a public specifier
-        { name: "react/jsx-runtime", entry: "./src/custom-jsx-runtime.ts" },
-      ],
-
-      // Optional
-      sharedOutDir: "shared",
-      log: false,
-    }),
-  ],
-});
 ```
 
 ---
@@ -109,132 +106,173 @@ npm add -D vite-plugin-native-import-maps
 yarn add -D vite-plugin-native-import-maps
 ```
 
+## Quick Start
+
+```ts
+import {defineConfig} from "vite";
+import {vitePluginNativeImportMaps} from "vite-plugin-native-import-maps";
+
+export default defineConfig({
+    plugins: [
+        vitePluginNativeImportMaps({
+            shared: [
+                "react",
+                "react-dom",
+                // Expose a custom/local entry under a public specifier
+                {name: "react/jsx-runtime", entry: "./src/custom-jsx-runtime.ts"},
+            ],
+            sharedOutDir: "shared",
+        }),
+    ],
+});
+```
+
 ---
 
 ## Configuration
 
-The plugin is exported as:
+### Options
 
-- `vitePluginNativeImportMaps(options): Plugin[]`
+- `shared` — List of modules to expose via the import map. Each entry can be a string (the specifier to expose, e.g.
+  `"react"`) or an object with `name` (the specifier), `entry` (the local path or package to resolve), and optionally
+  `integrity` (enable SRI hash for that dependency).
 
-### `shared` (required)
+- `sharedOutDir` — Directory prefix for emitted shared chunks in production. Defaults to `""` (root of output
+  directory).
 
-```ts
-type SharedDependencyConfig = Array<string | { name: string; entry: string }>;
-```
+- `integrity` —
+  Enable [Subresource Integrity](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap#integrity_metadata_map)
+  for all shared dependencies. Set to `true`, `"sha256"`, `"sha384"`, or `"sha512"`. This adds an `integrity` map to the
+  import map so browsers can verify module contents. Can also be configured per-dependency via the object form in
+  `shared`.
 
-- `"react"` means: expose the module specifier `react`.
-- `{ name, entry }` means:
-  - `name`: the **specifier** that will appear in the import map
-  - `entry`: what Vite should **resolve/build** (a package name or a local path)
+- `log` — Enable debug logging. Defaults to `false`.
 
-This is useful when you want to expose a modified build of a dependency, or a local “bridge” module.
+- `injectImportMapsToHtml` — Automatically inject a `<script type="importmap">` into the HTML `<head>`. Defaults to
+  `true`. Set to `false` for SSR apps and use the `virtual:importmap` module instead.
 
-### Full options
+- `importMapHtmlTransformer` — A function to transform the resolved `imports` object before injecting into HTML. Useful
+  for adding a base path prefix, rewriting URLs to a CDN, or filtering entries.
 
-| Option | Type | Default | Notes |
-|---|---|---:|---|
-| `shared` | `Array<string \| { name: string; entry: string }>` | — | Shared module specifiers to expose via the import map. |
-| `sharedOutDir` | `string` | `""` | Directory prefix for the emitted shared chunks in production. Examples use `"shared"`. |
-| `log` | `boolean` | `false` | Enables debug-ish logging. |
-| `injectImportMapsToHtml` | `boolean` | `true` | Injects a `<script type="importmap">…</script>` into the main HTML. **Set to `false` for SSR** and inject it yourself. |
-| `importMapHtmlTransformer` | `(imports) => imports` | identity | Lets you rewrite the final `imports` map before it’s injected into HTML (e.g. add base path, rewrite to CDN, etc.). |
-| `outputAsFile` | `boolean \| string` | `false` | When enabled, serves and emits an import map JSON file at `/<name>.json` (default name `import-map`). |
-
-### SSR note (`injectImportMapsToHtml: false`)
-
-On SSR frameworks the final HTML might not be produced by Vite’s `transformIndexHtml()` pipeline.
-In those cases, disable auto injection and consume the import map through the virtual module:
-
-```ts
-// somewhere in your SSR HTML/template layer
-import importMap from "virtual:importmap";
-```
-
-(See the TanStack Start SSR example in [`./examples/react-tanstack-start-ssr`](./examples/react-tanstack-start-ssr)).
+- `outputAsFile` — Emit the import map as a standalone JSON file. Set to `true` for `/import-map.json`, or provide a
+  custom name (e.g. `"my-map"` → `/my-map.json`). The file is served by Vite in dev and emitted as an asset in build.
 
 ---
 
-## What the plugin outputs
+## What the Plugin Outputs
 
-This plugin provides the import map in three ways:
+The plugin provides the import map in **three ways**:
 
-1) **HTML injection** (default)
-- Adds a `<script type="importmap">…</script>` in the `<head>`.
+### 1. HTML Injection (default)
 
-2) **Virtual module**: `virtual:importmap`
-- Always available.
-- Exports:
-  - `importMapRaw` (string)
-  - `importMap` (object)
-  - `default` export = `importMap`
+Adds a `<script type="importmap">…</script>` tag in the `<head>`.
 
-3) **Optional JSON file** (`outputAsFile`)
-- In dev: served by the Vite dev server at `/<name>.json`.
-- In build: emitted as an asset `/<name>.json`.
+### 2. Virtual Module: `virtual:importmap`
+
+Always available. Import it anywhere in your code:
+
+```ts
+import importMap from "virtual:importmap";
+// or
+import {importMap, importMapRaw} from "virtual:importmap";
+```
+
+**Exports:**
+| Export | Type | Description |
+|--------|------|-------------|
+| `default` | `object` | The import map object |
+| `importMap` | `object` | Same as default |
+| `importMapRaw` | `string` | JSON string of the import map |
+
+### 3. JSON File (optional)
+
+When `outputAsFile` is enabled:
+
+- **Dev:** Served at `/<name>.json`
+- **Build:** Emitted as `/<name>.json`
 
 ---
 
 ## Recipes
 
-### Expose local entry points (custom ESM wrappers)
+### Expose Local Entry Points (Custom ESM Wrappers)
 
-A common use-case is to expose a local `react` entry that re-exports React, so you can control exactly what gets shared.
+Expose a local file that re-exports a dependency, giving you full control over what gets shared:
 
 ```ts
 vitePluginNativeImportMaps({
-  shared: [
-    { name: "react", entry: "./src/react-esm.ts" },
-    { name: "react/jsx-runtime", entry: "./src/react-jsx-runtime.ts" },
-    "react-dom",
-  ],
-  sharedOutDir: "shared",
+    shared: [
+        {name: "react", entry: "./src/react-esm.ts"},
+        {name: "react/jsx-runtime", entry: "./src/react-jsx-runtime.ts"},
+        "react-dom",
+    ],
+    sharedOutDir: "shared",
 });
 ```
 
-### If your remote is bundled, mark shared deps as `external`
+---
 
-If a remote module is built with a bundler (Rollup/Vite/esbuild/etc.), configure shared dependencies as `external`.
-This ensures the remote keeps `import "react"` in the output instead of bundling React.
+### Enable Integrity Checks
+
+Add SRI hashes to verify module integrity:
+
+```ts
+vitePluginNativeImportMaps({
+    shared: ["react", "react-dom"],
+    integrity: "sha384", // applies to all
+});
+
+// Or per-dependency:
+vitePluginNativeImportMaps({
+    shared: [
+        {name: "react", entry: "react", integrity: "sha384"},
+        {name: "react-dom", entry: "react-dom", integrity: false},
+    ],
+});
+```
+
+---
+
+### Mark Shared Deps as `external` in Remote Builds
+
+If a remote module uses a bundler, configure shared dependencies as `external` to prevent bundling them:
 
 **tsdown example:**
 
 ```ts
-// rollup.config.ts
-import { defineConfig } from "tsdown";
+import {defineConfig} from "tsdown";
 
 export default defineConfig({
-  // ...
-  external: ["react", "react-dom", "react/jsx-runtime"],
+    external: ["react", "react-dom", "react/jsx-runtime"],
 });
 ```
 
 **Vite (library mode) example:**
 
 ```ts
-// vite.config.ts
-import { defineConfig } from "vite";
+import {defineConfig} from "vite";
 
 export default defineConfig({
-  build: {
-    lib: {
-      entry: "./src/index.ts",
-      formats: ["es"],
+    build: {
+        lib: {
+            entry: "./src/index.ts",
+            formats: ["es"],
+        },
+        rollupOptions: {
+            external: ["react", "react-dom", "react/jsx-runtime"],
+        },
     },
-    rollupOptions: {
-      external: ["react", "react-dom", "react/jsx-runtime"],
-    },
-  },
 });
 ```
 
-### Serve a JSON import map file
+---
+
+### Serve Import Map as JSON File
 
 ```ts
 vitePluginNativeImportMaps({
-  shared: ["react"],
-  // serves /import-map.json
-  outputAsFile: true, // serves/emits /import-map.json
+    shared: ["react"],
+    outputAsFile: true, // /import-map.json
 });
 ```
 
@@ -242,34 +280,46 @@ vitePluginNativeImportMaps({
 
 ## Troubleshooting
 
-### “My SSR app doesn’t show the import map”
+### SSR App Doesn't Show the Import Map
 
-Set `injectImportMapsToHtml: false` and inject it in your SSR HTML yourself.
-Use `virtual:importmap` to read the resolved import map.
+Set `injectImportMapsToHtml: false` and inject the import map yourself using `virtual:importmap`:
 
-### “A specifier resolves to the wrong module”
-
-The specifier must match exactly what your code imports.
-For example `react/jsx-runtime` is a different specifier from `react`.
-
-### “Import maps aren’t supported in my target browser”
-
-Import maps are a browser feature. If you need broader support, consider polyfills such as `es-module-shims`.
-There’s an example host project in [`./examples/react-host-es-module-shims`](./examples/react-host-es-module-shims).
+```ts
+import importMap from "virtual:importmap";
+// Inject into your SSR HTML template
+```
 
 ---
 
-## How it works (high level)
+### Specifier Resolves to the Wrong Module
 
-- The plugin collects the `shared` entries.
-- In **dev**, it resolves the corresponding Vite dev-server URLs.
-- In **build**, it adds extra Rollup inputs so shared deps get their own output chunks, then records the final chunk URLs.
-- It then exposes that mapping via:
-  - HTML injection (optional)
-  - `virtual:importmap` (always)
-  - an emitted JSON file (optional)
+Ensure the specifier matches exactly what your code imports:
 
-A real build snapshot is available in:
+- `react/jsx-runtime` ≠ `react`
+- `solid-js/web` ≠ `solid-js`
+
+---
+
+### Import Maps Not Supported in Target Browser
+
+Import maps require modern browsers. For broader support, use a polyfill
+like [es-module-shims](https://github.com/guybedford/es-module-shims).
+
+See the example: [`./examples/react-host-es-module-shims`](./examples/react-host-es-module-shims)
+
+---
+
+## How It Works
+
+1. **Collects** the `shared` entries from your config
+2. **In dev:** Resolves corresponding Vite dev-server URLs
+3. **In build:** Adds extra Rollup inputs so shared deps get dedicated output chunks, then records the final chunk URLs
+4. **Exposes** the mapping via:
+    - HTML injection (optional)
+    - `virtual:importmap` module (always)
+    - JSON file (optional)
+
+**Build snapshot:**
 
 - [`./test/fixture/basic`](./test/fixture/basic)
 - [`./test/__snapshot__/build-project-with-right-import-maps`](./test/__snapshot__/build-project-with-right-import-maps)
@@ -278,16 +328,14 @@ A real build snapshot is available in:
 
 ## Examples
 
-- Solid host + remote:
-  - [`./examples/solidjs-host`](./examples/solidjs-host)
-  - [`./examples/solidjs-remote-counter`](./examples/solidjs-remote-counter)
-- React hosts:
-  - [`./examples/react-host-custom`](./examples/react-host-custom)
-  - [`./examples/react-host-es-module-shims`](./examples/react-host-es-module-shims)
-- React remote:
-  - [`./examples/react-remote-counter`](./examples/react-remote-counter)
-- SSR:
-  - [`./examples/react-tanstack-start-ssr`](./examples/react-tanstack-start-ssr)
+| Example                                                               | Description                              |
+|-----------------------------------------------------------------------|------------------------------------------|
+| [`solidjs-host`](./examples/solidjs-host)                             | Solid.js host app                        |
+| [`solidjs-remote-counter`](./examples/solidjs-remote-counter)         | Solid.js remote module                   |
+| [`react-host-custom`](./examples/react-host-custom)                   | React host with custom ESM wrappers      |
+| [`react-host-es-module-shims`](./examples/react-host-es-module-shims) | React host with es-module-shims polyfill |
+| [`react-remote-counter`](./examples/react-remote-counter)             | React remote module                      |
+| [`react-tanstack-start-ssr`](./examples/react-tanstack-start-ssr)     | SSR example with TanStack Start          |
 
 ---
 
