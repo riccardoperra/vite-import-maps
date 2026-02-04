@@ -27,11 +27,12 @@
     "vite-plugin",
     "import-maps",
     "mfe",
+    "import maps",
     "microfrontend",
     "plugin"
   ],
-  "repository": "https://github.com/riccardoperra/vite-plugin-native-import-maps",
-  "homepage": "https://github.com/riccardoperra/vite-plugin-native-import-maps",
+  "repository": "https://github.com/riccardoperra/vite-plugin-import-maps",
+  "homepage": "https://github.com/riccardoperra/vite-plugin-import-maps",
   "author": {
     "name": "Riccardo Perra",
     "email": "riccardo.perra@icloud.com",
