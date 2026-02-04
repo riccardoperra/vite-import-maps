@@ -1,7 +1,7 @@
-import { pluginName } from "./config.js";
-import { fileToUrl } from "./utils.js";
+import { pluginName } from "../config.js";
+import { fileToUrl } from "../utils.js";
 import type { Plugin } from "vite";
-import type { VitePluginImportMapsStore } from "./store.js";
+import type { VitePluginImportMapsStore } from "../store.js";
 
 interface DevResolvedModule {
   name: string;
