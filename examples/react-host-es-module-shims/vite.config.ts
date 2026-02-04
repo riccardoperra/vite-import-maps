@@ -10,7 +10,6 @@ export default defineConfig({
   plugins: [
     vitePluginNativeImportMaps({
       shared: ['react'],
-      buildOptions: {strategy: 'virtual-modules'},
       outputAsFile: true
     }),
     react()

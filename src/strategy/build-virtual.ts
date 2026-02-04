@@ -33,7 +33,6 @@ export function buildWithVirtual(
   const name = pluginName("build:virtual");
   const virtualModules = new Map<string, ImportMapBuildChunkEntrypoint>();
   const localModules = new Map<string, ImportMapBuildChunkEntrypoint>();
-  console.log("virtual and local created");
   let config!: ResolvedConfig;
 
   function virtualChunksApplierPlugin(): Plugin {

@@ -15,9 +15,6 @@ export default defineConfig({
       ],
       log: true,
       sharedOutDir: "shared",
-      buildOptions: {
-        strategy: 'virtual-modules'
-      },
     }),
   ],
 });

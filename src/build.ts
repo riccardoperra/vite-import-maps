@@ -14,31 +14,20 @@
  * limitations under the License.
  */
 
-import { buildWithInputOptions } from "./strategy/build-with-input-options.js";
 import { buildWithVirtual } from "./strategy/build-virtual.js";
 import type { Plugin } from "vite";
-import type { ImportMapsBuildOptions } from "./config.js";
 import type { VitePluginImportMapsStore } from "./store.js";
 
 export function pluginImportMapsBuildEnv(
   store: VitePluginImportMapsStore,
-  buildOptions: ImportMapsBuildOptions,
 ): Array<Plugin> {
   const plugins: Array<Plugin> = [];
-
-  const resolvedBuildOptions: Required<ImportMapsBuildOptions> = {
-    strategy: buildOptions.strategy ?? "virtual-modules",
-  };
 
   for (const dep of store.sharedDependencies) {
     store.addInput(dep);
   }
 
-  if (resolvedBuildOptions.strategy === "entry-as-input") {
-    plugins.push(buildWithInputOptions(store));
-  } else {
-    plugins.push(...buildWithVirtual(store));
-  }
+  plugins.push(...buildWithVirtual(store));
 
   return plugins;
 }

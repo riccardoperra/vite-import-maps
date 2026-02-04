@@ -29,6 +29,7 @@ export function virtualChunksResolverPlugin(store: VitePluginImportMapsStore): P
     name: pluginName("build:virtual-chunks-loader"),
     apply: "build",
     resolveId(id) {
+      if (this.environment.name === 'ssr') return;
       if (id.startsWith(VIRTUAL_ID_PREFIX)) {
         const normalizedId = id.slice(VIRTUAL_ID_PREFIX.length + 1);
         return {
@@ -42,6 +43,7 @@ export function virtualChunksResolverPlugin(store: VitePluginImportMapsStore): P
       }
     },
     async load(id) {
+      if (this.environment.name === "ssr") return;
       if (!id.startsWith(VIRTUAL_ID_PREFIX)) {
         return;
       }
