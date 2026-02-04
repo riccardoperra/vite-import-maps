@@ -2,12 +2,14 @@
   "name": "vite-plugin-native-import-maps",
   "version": "0.1.0",
   "description": "A Vite plugin that manages import maps for shared dependencies in your Vite applications.",
-  "main": "index.js",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
     }
   },
   "files": [
