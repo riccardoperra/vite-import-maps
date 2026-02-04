@@ -1,10 +1,36 @@
+import type {RegisteredDependency,
+  VitePluginImportMapsStore} from "./store.js";
+
 export const PLUGIN_NAME = "vite-plugin-import-maps";
 
 export function pluginName(name: string) {
   return `${PLUGIN_NAME}:${name}`;
 }
 
-export type DependencyIntegrityCheck = 'sha256' | 'sha384' | 'sha512';
+export interface ImportMapSignature {
+  /**
+   * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap#imports
+   */
+  imports?: Record<string, any>;
+  /**
+   * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap#integrity
+   */
+  integrity?: Record<string, string>;
+  /**
+   * @see @see https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap#scopes
+   */
+  scopes?: Record<string, any>;
+}
+
+export type ImportMapTransformerFn = (
+  importMap: ImportMapSignature,
+  meta: {
+    entries: Map<string, RegisteredDependency>;
+    store: VitePluginImportMapsStore;
+  },
+) => ImportMapSignature;
+
+export type DependencyIntegrityCheck = "sha256" | "sha384" | "sha512";
 
 export interface SharedDependencyObjectConfig {
   /**
@@ -22,7 +48,9 @@ export interface SharedDependencyObjectConfig {
    */
   integrity?: boolean | DependencyIntegrityCheck;
 }
-export type SharedDependencyConfig = Array<string | SharedDependencyObjectConfig>;
+export type SharedDependencyConfig = Array<
+  string | SharedDependencyObjectConfig
+>;
 
 export interface VitePluginImportMapsConfig {
   /**
@@ -56,9 +84,7 @@ export interface VitePluginImportMapsConfig {
   /**
    * Transform the resolved import map `imports` before writing it to the HTML file
    */
-  importMapHtmlTransformer?: (
-    importMap: Record<string, string>,
-  ) => Record<string, string>;
+  importMapHtmlTransformer?: ImportMapTransformerFn;
   /**
    * Whether to generate an import file.
    *

@@ -2,6 +2,8 @@ import path from "node:path";
 import { normalizeDependencyName } from "./utils.js";
 import type {
   DependencyIntegrityCheck,
+  ImportMapSignature,
+  ImportMapTransformerFn,
   SharedDependencyConfig,
   VitePluginImportMapsConfig,
 } from "./config.js";
@@ -20,20 +22,18 @@ export interface NormalizedDependencyInput {
 }
 
 export class VitePluginImportMapsStore {
-  #defaultIntegrity: boolean | DependencyIntegrityCheck;
+  readonly defaultIntegrity: boolean | DependencyIntegrityCheck;
   readonly sharedDependencies: ReadonlyArray<NormalizedDependencyInput> = [];
   readonly sharedOutDir: string = "";
   readonly log: boolean;
-  readonly importMapHtmlTransformer: (
-    imports: Record<string, any>,
-    entries: Map<string, RegisteredDependency>,
-  ) => Record<string, any> = (imports) => imports;
+  readonly importMapHtmlTransformer: ImportMapTransformerFn = (importMap) =>
+    importMap;
   readonly importMapDependencies: Map<string, RegisteredDependency> = new Map();
 
   readonly inputs: Array<ImportMapBuildChunkEntrypoint> = [];
 
   constructor(options: VitePluginImportMapsConfig) {
-    this.#defaultIntegrity = options.integrity || false;
+    this.defaultIntegrity = options.integrity || false;
     this.sharedDependencies = [
       ...options.shared.map(this.normalizeDependencyInput),
     ];
@@ -50,15 +50,20 @@ export class VitePluginImportMapsStore {
     entry: SharedDependencyConfig[number],
   ): NormalizedDependencyInput => {
     if (typeof entry === "string") {
-      return { name: entry, entry: entry, localFile: false, integrity: this.#defaultIntegrity };
+      return {
+        name: entry,
+        entry: entry,
+        localFile: false,
+        integrity: this.defaultIntegrity,
+      };
     }
     return {
       name: entry.name,
       entry: entry.entry,
       localFile: entry.entry.startsWith("./") || entry.entry.startsWith("../"),
-      integrity: entry.integrity ?? this.#defaultIntegrity,
+      integrity: entry.integrity ?? this.defaultIntegrity,
     };
-  }
+  };
 
   clearDependencies(): void {
     this.importMapDependencies.clear();
@@ -76,7 +81,7 @@ export class VitePluginImportMapsStore {
     return path.join(this.sharedOutDir, entrypoint);
   }
 
-  addInput(input: NormalizedDependencyInput) {
+  addInput(input: NormalizedDependencyInput): ImportMapBuildChunkEntrypoint {
     const dependency = input.name;
     const normalizedDepName = this.getNormalizedDependencyName(dependency);
     const entrypoint = this.getEntrypointPath(normalizedDepName);
@@ -87,7 +92,7 @@ export class VitePluginImportMapsStore {
       normalizedDependencyName: normalizedDepName,
       idToResolve: input.entry,
       localFile: input.localFile,
-      integrity: input.integrity
+      integrity: input.integrity,
     } satisfies ImportMapBuildChunkEntrypoint;
 
     this.inputs.push(meta);
@@ -97,18 +102,25 @@ export class VitePluginImportMapsStore {
 
   getImportMapAsJson(): Record<string, any> {
     const imports = {} as Record<string, string>;
+    const integrity = {} as Record<string, string>;
     this.importMapDependencies.forEach((dep) => {
       imports[dep.packageName] = dep.url;
+      if (dep.integrity) {
+        integrity[dep.url] = dep.integrity;
+      }
     });
 
-    const resolvedImports = this.importMapHtmlTransformer(
+    const importMap: ImportMapSignature = {
       imports,
-      this.importMapDependencies
-    );
-
-    return {
-      imports: resolvedImports
+    };
+    if (Object.keys(integrity).length > 0) {
+      importMap.integrity = integrity;
     }
+
+    return this.importMapHtmlTransformer(importMap, {
+      store: this,
+      entries: this.importMapDependencies,
+    });
   }
 }
 

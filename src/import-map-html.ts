@@ -9,25 +9,7 @@ export function pluginImportMapsInject(
   return {
     name,
     transformIndexHtml(source) {
-      const imports = {} as Record<string, string>;
-      const integrity = {} as Record<string, string>
-      store.importMapDependencies.forEach((dep) => {
-        imports[dep.packageName] = dep.url;
-        if (dep.integrity) {
-          integrity[dep.url] = dep.integrity;
-        }
-      });
-
-      const resolvedImports = store.importMapHtmlTransformer(
-        imports,
-        store.importMapDependencies
-      );
-
-      const importMap: Record<string, any> = {};
-      importMap.imports = resolvedImports;
-      if (Object.keys(integrity).length > 0) {
-        importMap.integrity = integrity;
-      }
+      const importMap = store.getImportMapAsJson();
 
       return {
         html: source,
