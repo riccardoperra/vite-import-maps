@@ -32,7 +32,7 @@ test("build project with right import map", async () => {
 
   expect(sharedDependency.type).toEqual("chunk");
   expect(sharedDependency.name).toEqual("@import-maps/shared-lib");
-  expect(sharedDependency.isEntry).toEqual(true);
+  expect(sharedDependency.isEntry).toEqual(false);
   expect(sharedDependency.fileName).toSatisfy((name) =>
     name.startsWith("assets/@import-maps/shared-lib-"),
   );
