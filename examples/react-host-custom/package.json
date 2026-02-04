@@ -4,8 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "prebuild": "pnpm --filter=react-remote-counter build",
+    "dev": "pnpm prebuild && vite",
+    "build": "pnpm prebuild && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

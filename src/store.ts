@@ -16,21 +16,27 @@
 
 import path from "node:path";
 import { normalizeDependencyName } from "./utils.js";
-import type { SharedDependencyConfig, VitePluginImportMapsConfig } from "./config.js";
+import type {
+  DependencyIntegrityCheck,
+  SharedDependencyConfig,
+  VitePluginImportMapsConfig,
+} from "./config.js";
 
 export interface RegisteredDependency {
   packageName: string;
   url: string;
+  integrity?: string;
 }
 
 export interface NormalizedDependencyInput {
   name: string;
   entry: string;
-
   localFile: boolean;
+  integrity: DependencyIntegrityCheck | boolean;
 }
 
 export class VitePluginImportMapsStore {
+  #defaultIntegrity: boolean | DependencyIntegrityCheck;
   readonly sharedDependencies: ReadonlyArray<NormalizedDependencyInput> = [];
   readonly sharedOutDir: string = "";
   readonly log: boolean;
@@ -43,6 +49,7 @@ export class VitePluginImportMapsStore {
   readonly inputs: Array<ImportMapBuildChunkEntrypoint> = [];
 
   constructor(options: VitePluginImportMapsConfig) {
+    this.#defaultIntegrity = options.integrity || false;
     this.sharedDependencies = [
       ...options.shared.map(this.normalizeDependencyInput),
     ];
@@ -59,12 +66,13 @@ export class VitePluginImportMapsStore {
     entry: SharedDependencyConfig[number],
   ): NormalizedDependencyInput => {
     if (typeof entry === "string") {
-      return { name: entry, entry: entry, localFile: false };
+      return { name: entry, entry: entry, localFile: false, integrity: this.#defaultIntegrity };
     }
     return {
       name: entry.name,
       entry: entry.entry,
       localFile: entry.entry.startsWith("./") || entry.entry.startsWith("../"),
+      integrity: entry.integrity ?? this.#defaultIntegrity,
     };
   }
 
@@ -95,6 +103,7 @@ export class VitePluginImportMapsStore {
       normalizedDependencyName: normalizedDepName,
       idToResolve: input.entry,
       localFile: input.localFile,
+      integrity: input.integrity
     } satisfies ImportMapBuildChunkEntrypoint;
 
     this.inputs.push(meta);
@@ -125,4 +134,5 @@ export interface ImportMapBuildChunkEntrypoint {
   entrypoint: string;
   idToResolve: string;
   localFile: boolean;
+  integrity: DependencyIntegrityCheck | boolean;
 }

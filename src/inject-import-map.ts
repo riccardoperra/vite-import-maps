@@ -10,8 +10,12 @@ export function pluginImportMapsInject(
     name,
     transformIndexHtml(source) {
       const imports = {} as Record<string, string>;
+      const integrity = {} as Record<string, string>
       store.importMapDependencies.forEach((dep) => {
         imports[dep.packageName] = dep.url;
+        if (dep.integrity) {
+          integrity[dep.url] = dep.integrity;
+        }
       });
 
       const resolvedImports = store.importMapHtmlTransformer(
@@ -19,13 +23,19 @@ export function pluginImportMapsInject(
         store.importMapDependencies
       );
 
+      const importMap: Record<string, any> = {};
+      importMap.imports = resolvedImports;
+      if (Object.keys(integrity).length > 0) {
+        importMap.integrity = integrity;
+      }
+
       return {
         html: source,
         tags: [
           {
             tag: "script",
             attrs: { type: "importmap" },
-            children: JSON.stringify({ imports: resolvedImports }),
+            children: JSON.stringify(importMap),
             injectTo: "head-prepend",
           },
         ],

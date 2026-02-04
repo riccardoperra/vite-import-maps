@@ -20,9 +20,25 @@ export function pluginName(name: string) {
   return `${PLUGIN_NAME}:${name}`;
 }
 
-export type SharedDependencyConfig = Array<
-  string | { name: string; entry: string }
->;
+export type DependencyIntegrityCheck = 'sha256' | 'sha384' | 'sha512';
+
+export interface SharedDependencyObjectConfig {
+  /**
+   * The name of the dependency that will be resolved
+   */
+  name: string;
+  /**
+   * Local path to the entry file, or the dependency name (e.g., react)
+   */
+  entry: string;
+  /**
+   * Enable integrity check for the dependency (only in build)
+   *
+   * https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap#integrity_metadata_map
+   */
+  integrity?: boolean | DependencyIntegrityCheck;
+}
+export type SharedDependencyConfig = Array<string | SharedDependencyObjectConfig>;
 
 export interface VitePluginImportMapsConfig {
   /**
@@ -35,6 +51,13 @@ export interface VitePluginImportMapsConfig {
    * @default ""
    */
   sharedOutDir?: string;
+  /**
+   * Default `integrity` value for entries.
+   * Can be customized per dependency through {@link SharedDependencyObjectConfig#integrity}
+   *
+   * https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap#integrity_metadata_map
+   */
+  integrity?: boolean | DependencyIntegrityCheck;
   /**
    * Enable logging
    */

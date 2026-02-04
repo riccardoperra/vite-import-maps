@@ -15,6 +15,7 @@
  */
 
 import path from "node:path";
+import { createHash } from "node:crypto";
 import { pluginName } from "../config.js";
 import {
   VIRTUAL_ID_PREFIX,
@@ -98,9 +99,20 @@ export function buildWithVirtual(
             // TODO: https://vite.dev/guide/backend-integration
             entry.isEntry = false;
 
+            let integrity: string | undefined;
+            if (entryImportMap.integrity !== false) {
+              const algorithm =
+                typeof entryImportMap.integrity === "string"
+                  ? entryImportMap.integrity
+                  : "sha384";
+              integrity = `${algorithm}-${createHash(algorithm)
+                .update(entry.code)
+                .digest("base64")}`;
+            }
+
             const url = `./${entry.fileName}`,
               packageName = entryImportMap.originalDependencyName;
-            store.addDependency({ url, packageName });
+            store.addDependency({ url, packageName, integrity });
             config.logger.info(`[${name}] Added ${packageName}: ${url}`, {
               timestamp: true,
             });
