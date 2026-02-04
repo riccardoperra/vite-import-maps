@@ -1,12 +1,11 @@
 {
-  "name": "react-host",
+  "name": "react-remote-counter",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
+    "build": "tsc -b && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -14,16 +13,10 @@
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
     "@types/react": "^19.2.11",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react-swc": "^4.2.3",
-    "eslint": "^9.39.2",
-    "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.5.0",
-    "globals": "^17.3.0",
     "typescript": "~5.9.3",
-    "typescript-eslint": "^8.54.0",
     "vite": "^7.3.1"
   }
 }

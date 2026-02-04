@@ -40,7 +40,7 @@ export class VitePluginImportMapsStore {
   ) => Record<string, any> = (imports) => imports;
   readonly importMapDependencies: Map<string, RegisteredDependency> = new Map();
 
-  readonly inputs: ReadonlyArray<ImportMapBuildChunkEntrypoint> = [];
+  readonly inputs: Array<ImportMapBuildChunkEntrypoint> = [];
 
   constructor(options: VitePluginImportMapsConfig) {
     this.sharedDependencies = [
@@ -55,16 +55,16 @@ export class VitePluginImportMapsStore {
     }
   }
 
-  private normalizeDependencyInput(
+  private normalizeDependencyInput = (
     entry: SharedDependencyConfig[number],
-  ): NormalizedDependencyInput {
+  ): NormalizedDependencyInput => {
     if (typeof entry === "string") {
       return { name: entry, entry: entry, localFile: false };
     }
     return {
       name: entry.name,
       entry: entry.entry,
-      localFile: entry.entry.includes("."),
+      localFile: entry.entry.startsWith("./") || entry.entry.startsWith("../"),
     };
   }
 
@@ -97,7 +97,7 @@ export class VitePluginImportMapsStore {
       localFile: input.localFile,
     } satisfies ImportMapBuildChunkEntrypoint;
 
-    (this.inputs as Array<ImportMapBuildChunkEntrypoint>).push(meta);
+    this.inputs.push(meta);
 
     return meta;
   }

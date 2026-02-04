@@ -49,22 +49,26 @@ export function buildWithVirtual(
             // since I expect their source is already correct and doesn't
             // need to be transformed
             const id = path.resolve(input.idToResolve);
-            this.emitFile({
-              type: "chunk",
-              name: input.entrypoint,
-              id,
-              preserveSignature: "strict",
-            });
+            if (!localModules.has(id)) {
+              this.emitFile({
+                type: "chunk",
+                name: input.entrypoint,
+                id,
+                preserveSignature: "strict",
+              });
+            }
             localModules.set(id, input);
           } else {
             const id = getVirtualFileName(input.normalizedDependencyName);
+            if (!virtualModules.has(id)) {
+              this.emitFile({
+                type: "chunk",
+                name: input.entrypoint,
+                id,
+                preserveSignature: "strict",
+              });
+            }
             virtualModules.set(id, input);
-            this.emitFile({
-              type: "chunk",
-              name: input.entrypoint,
-              id,
-              preserveSignature: "strict",
-            });
           }
         }
       },
@@ -90,6 +94,9 @@ export function buildWithVirtual(
           ) {
             const entryImportMap = handledModules.get(entry.facadeModuleId);
             if (!entryImportMap) continue;
+
+            // TODO: https://vite.dev/guide/backend-integration
+            entry.isEntry = false;
 
             const url = `./${entry.fileName}`,
               packageName = entryImportMap.originalDependencyName;

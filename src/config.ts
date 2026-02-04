@@ -24,10 +24,6 @@ export type SharedDependencyConfig = Array<
   string | { name: string; entry: string }
 >;
 
-export interface ImportMapsBuildOptions {
-  strategy?: "virtual-modules" | "entry-as-input";
-}
-
 export interface VitePluginImportMapsConfig {
   /**
    * Dependencies shared by modules
@@ -44,9 +40,12 @@ export interface VitePluginImportMapsConfig {
    */
   log?: boolean;
   /**
-   * Custom options for plugin processing during build
+   * Whether to inject the import map in to the main HTML file. Defaults to true.
+   *
+   * NOTE: You probably have to set `false` in apps with SSR enabled,
+   * and use the `virtual:importmap` dynamic import instead.
    */
-  buildOptions?: ImportMapsBuildOptions;
+  injectImportMapsToHtml?: boolean;
   /**
    * Transform the resolved import map `imports` before writing it to the HTML file
    */

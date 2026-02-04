@@ -14,20 +14,14 @@
  * limitations under the License.
  */
 
-import { buildWithVirtual } from "./strategy/build-virtual.js";
-import type { Plugin } from "vite";
-import type { VitePluginImportMapsStore } from "./store.js";
+import { useState } from "react";
 
-export function pluginImportMapsBuildEnv(
-  store: VitePluginImportMapsStore,
-): Array<Plugin> {
-  const plugins: Array<Plugin> = [];
+export default function Counter() {
+  const [count, setCount] = useState(0);
 
-  for (const dep of store.sharedDependencies) {
-    store.addInput(dep);
-  }
-
-  plugins.push(...buildWithVirtual(store));
-
-  return plugins;
+  return (
+    <button onClick={() => setCount((count) => count + 1)}>
+     This is a remote React counter: {count}
+    </button>
+  )
 }
