@@ -1,5 +1,11 @@
 # vite-plugin-native-import-maps
 
+## 0.1.4
+
+### Patch Changes
+
+- 82cd958: Update package.json info
+
 ## 0.1.3
 
 ### Patch Changes
