@@ -53,6 +53,9 @@ import { vitePluginNativeImportMaps } from "vite-plugin-native-import-maps";
 export default defineConfig({
   plugins: [
     vitePluginNativeImportMaps({
+      // Add SRI hashes to verify module integrity in build
+      integrity: 'sha-384',
+      log: true,
       imports: [
         // Wanna expose react with import maps?
         "react",
