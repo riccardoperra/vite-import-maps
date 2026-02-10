@@ -1,4 +1,4 @@
-<h1 align="center">vite-plugin-native-import-maps</h1>
+<h1 align="center">vite-import-maps</h1>
 <br/>
 <p align="center">
   <a href="https://npmjs.com/package/vite-plugin-native-import-maps"><img src="https://img.shields.io/npm/v/vite-plugin-native-import-maps.svg" alt="npm package"></a>
@@ -41,7 +41,7 @@ pnpm add -D vite-plugin-native-import-maps
 npm add -D vite-plugin-native-import-maps
 
 # yarn
-yarn add -D vite-plugin-native-import-maps
+yarn add -D vite-import-maps
 ```
 
 ## Setup
@@ -70,18 +70,18 @@ export default defineConfig({
 
 ### Options
 
-- `shared` — List of modules to expose via the import map. Each entry can be a string (the specifier to expose, e.g.
+- `imports` — List of modules to expose via the import map. Each entry can be a string (the specifier to expose, e.g.
   `"react"`) or an object with `name` (the specifier), `entry` (the local path or package to resolve), and optionally
   `integrity` (enable SRI hash for that dependency).
 
-- `sharedOutDir` — Directory prefix for emitted shared chunks in production. Defaults to `""` (root of output
+- `modulesOutDir` — Directory prefix for emitted shared chunks in production. Defaults to `""` (root of output
   directory).
 
 - `integrity` —
   Enable [Subresource Integrity](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap#integrity_metadata_map)
   for all shared dependencies. Set to `true`, `"sha256"`, `"sha384"`, or `"sha512"`. This adds an `integrity` map to the
   import map so browsers can verify module contents. Can also be configured per-dependency via the object form in
-  `shared`.
+  `imports`.
 
 - `log` — Enable debug logging. Defaults to `false`.
 
@@ -120,7 +120,7 @@ With this plugin, **your host app becomes the source of truth**. Shared dependen
 
 **Works in both development and production**
 
-Most import map solutions only work at build time. This plugin keeps the import map in sync with Vite's dev server *and* production builds. During development, it resolves to Vite's optimized deps; in production, it points to the correct hashed chunk filenames. No manual updates, no mismatches.
+Most import map solutions only work at build time. This plugin keeps the import map in sync with Vite's dev server _and_ production builds. During development, it resolves to Vite's optimized deps; in production, it points to the correct hashed chunk filenames. No manual updates, no mismatches.
 
 **No build step required for remotes**
 
@@ -134,7 +134,7 @@ Host and all remotes share the exact same module instances.
 
 Expose npm packages as-is, or provide custom wrapper modules, modified builds, or local files. You decide exactly what each specifier resolves to.
 
-> **Note:** If a remote *does* use a bundler, shared dependencies must be marked as **external**.
+> **Note:** If a remote _does_ use a bundler, shared dependencies must be marked as **external**.
 > Otherwise the remote bundles its own copy and you lose the single-instance benefit.
 
 Import maps are simple in concept, but keeping them in sync with your build is tedious:
@@ -168,12 +168,12 @@ Expose a local file that re-exports a dependency, giving you full control over w
 
 ```ts
 vitePluginNativeImportMaps({
-    shared: [
-        {name: "react", entry: "./src/react-esm.ts"},
-        {name: "react/jsx-runtime", entry: "./src/react-jsx-runtime.ts"},
-        "react-dom",
-    ],
-    sharedOutDir: "shared",
+  imports: [
+    { name: "react", entry: "./src/react-esm.ts" },
+    { name: "react/jsx-runtime", entry: "./src/react-jsx-runtime.ts" },
+    "react-dom",
+  ],
+  modulesOutDir: "shared",
 });
 ```
 
@@ -273,6 +273,33 @@ Import maps require modern browsers. For broader support, use a polyfill
 like [es-module-shims](https://github.com/guybedford/es-module-shims).
 
 See the example: [`./examples/react-host-es-module-shims`](./examples/react-host-es-module-shims)
+
+### Integrate with es-module-shims (dynamic import maps)
+
+You can integrate this plugin with **es-module-shims** in two common ways depending on how you want import maps applied at runtime:
+
+- **Apply import maps dynamically at runtime** — If you prefer the plugin to emit a JSON file (use `outputAsFile: true`) or to use the `virtual:importmap` module, you can fetch or import the map and pass it to the es-module-shims runtime via the global `importShim` API (it exposes helpers like `addImportMap` and `import`).
+
+  ```ts
+  import "es-module-shims";
+
+  // When using outputAsFile: true (e.g. /import-map.json)
+  fetch("/import-map.json")
+    .then((r) => r.json())
+    .then((map) => importShim.addImportMap(map))
+    .then(() => importShim.import("/your/entry.js"));
+  ```
+
+  Example (virtual module):
+
+  ```js
+  import "es-module-shims";
+  import importMap from "virtual:importmap";
+
+  importShim.addImportMap(importMap).then(() => {
+    // now safe to dynamically import shimmed modules
+  });
+  ```
 
 ---
 

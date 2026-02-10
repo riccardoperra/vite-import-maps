@@ -29,7 +29,7 @@ export default defineConfig({
         { name: "react-dom", entry: "react-dom"},
       ],
       log: true,
-      sharedOutDir: "shared",
+      modulesOutDir: "shared",
     }),
   ],
 });

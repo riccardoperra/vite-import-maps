@@ -1,5 +1,5 @@
 {
-  "name": "vite-plugin-native-import-maps",
+  "name": "vite-import-maps",
   "version": "0.1.2",
   "description": "A Vite plugin that manages import maps for shared dependencies in your Vite applications.",
   "main": "./dist/index.mjs",

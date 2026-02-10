@@ -33,7 +33,7 @@ const config = defineConfig({
         "react-dom",
       ],
       log: true,
-      sharedOutDir: "shared",
+      modulesOutDir: "shared",
       injectImportMapsToHtml: false,
     }),
   ],

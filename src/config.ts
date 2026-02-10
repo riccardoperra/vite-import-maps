@@ -62,7 +62,7 @@ export interface VitePluginImportMapsConfig {
    *
    * @default ""
    */
-  sharedOutDir?: string;
+  modulesOutDir?: string;
   /**
    * Default `integrity` value for entries.
    * Can be customized per dependency through {@link SharedDependencyObjectConfig#integrity}

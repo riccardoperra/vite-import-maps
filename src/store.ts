@@ -24,7 +24,7 @@ export interface NormalizedDependencyInput {
 export class VitePluginImportMapsStore {
   readonly defaultIntegrity: boolean | DependencyIntegrityCheck;
   readonly sharedDependencies: ReadonlyArray<NormalizedDependencyInput> = [];
-  readonly sharedOutDir: string = "";
+  readonly modulesOutDir: string = "";
   readonly log: boolean;
   readonly importMapHtmlTransformer: ImportMapTransformerFn = (importMap) =>
     importMap;
@@ -38,8 +38,8 @@ export class VitePluginImportMapsStore {
       ...options.shared.map(this.normalizeDependencyInput),
     ];
     this.log = options.log || false;
-    if (options.sharedOutDir) {
-      this.sharedOutDir = options.sharedOutDir;
+    if (options.modulesOutDir) {
+      this.modulesOutDir = options.modulesOutDir;
     }
     if (options.importMapHtmlTransformer) {
       this.importMapHtmlTransformer = options.importMapHtmlTransformer;
@@ -78,7 +78,7 @@ export class VitePluginImportMapsStore {
   }
 
   getEntrypointPath(entrypoint: string): string {
-    return path.join(this.sharedOutDir, entrypoint);
+    return path.join(this.modulesOutDir, entrypoint);
   }
 
   addInput(input: NormalizedDependencyInput): ImportMapBuildChunkEntrypoint {
