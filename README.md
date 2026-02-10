@@ -1,8 +1,8 @@
 <h1 align="center">vite-import-maps</h1>
 <br/>
 <p align="center">
-  <a href="https://npmjs.com/package/vite-plugin-native-import-maps"><img src="https://img.shields.io/npm/v/vite-plugin-native-import-maps.svg" alt="npm package"></a>
-  <a href="https://github.com/riccardoperra/vite-plugin-import-maps/actions/workflows/ci.yml"><img src="https://github.com/riccardoperra/vite-plugin-import-maps/actions/workflows/release.yml/badge.svg?branch=main" alt="build status"></a>
+  <a href="https://npmjs.com/package/vite-import-maps"><img src="https://img.shields.io/npm/v/vite-import-maps.svg" alt="npm package"></a>
+  <a href="https://github.com/riccardoperra/vite-import-maps/actions/workflows/ci.yml"><img src="https://github.com/riccardoperra/vite-import-maps/actions/workflows/release.yml/badge.svg?branch=main" alt="build status"></a>
 </p>
 
 A Vite plugin that generates and keeps **browser [import maps](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap)** in sync with your Vite dev server and production build.
