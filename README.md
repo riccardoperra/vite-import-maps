@@ -5,7 +5,7 @@
   <a href="https://github.com/riccardoperra/vite-plugin-import-maps/actions/workflows/ci.yml"><img src="https://github.com/riccardoperra/vite-plugin-import-maps/actions/workflows/release.yml/badge.svg?branch=main" alt="build status"></a>
 </p>
 
-A Vite plugin that generates and keeps **browser import maps** in sync with your Vite dev server and production build.
+A Vite plugin that generates and keeps **browser [import maps](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap)** in sync with your Vite dev server and production build.
 
 It's aimed at **micro-frontends**, **plugin systems**, and any setup where you load ESM modules at runtime and want to:
 
