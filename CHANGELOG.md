@@ -1,5 +1,11 @@
 # vite-plugin-native-import-maps
 
+## 0.1.3
+
+### Patch Changes
+
+- 2584c9b: rename `shared` option to `imports` and `sharedOutDir` to `modulesOutDir`
+
 ## 0.1.2
 
 ### Patch Changes
