@@ -28,8 +28,8 @@ export default {
   },
   plugins: [
     vitePluginNativeImportMaps({
-      shared: ["shared-lib"],
-      sharedOutDir: "@import-maps",
+      imports: ["shared-lib"],
+      modulesOutDir: "@import-maps",
     }),
   ],
 } satisfies UserConfig;

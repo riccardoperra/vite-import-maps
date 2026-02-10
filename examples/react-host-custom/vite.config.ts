@@ -19,7 +19,7 @@ export default defineConfig({
     react(),
     vitePluginNativeImportMaps({
       integrity: 'sha384',
-      shared: [
+      imports: [
         { name: "react", entry: "./src/react-esm.ts", integrity: "sha256" },
         {
           name: "react/jsx-runtime",

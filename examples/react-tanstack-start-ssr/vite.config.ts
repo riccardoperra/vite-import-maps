@@ -27,7 +27,7 @@ const config = defineConfig({
     tanstackStart(),
     viteReact(),
     vitePluginNativeImportMaps({
-      shared: [
+      imports: [
         { name: "react", entry: "./src/react-esm.ts" },
         { name: "react/jsx-runtime", entry: "./src/react-jsx-runtime.ts" },
         "react-dom",

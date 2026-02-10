@@ -3,7 +3,7 @@
   "version": "0.1.2",
   "description": "A Vite plugin that manages import maps for shared dependencies in your Vite applications.",
   "main": "./dist/index.mjs",
-  "module": "./dist/index.mjs",
+  "module ": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
   "type": "module",
   "exports": {

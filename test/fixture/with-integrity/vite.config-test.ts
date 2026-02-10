@@ -28,9 +28,9 @@ export default {
   },
   plugins: [
     vitePluginNativeImportMaps({
-      integrity: 'sha384',
-      shared: ["shared-lib"],
-      sharedOutDir: "@import-maps",
+      integrity: "sha384",
+      imports: ["shared-lib"],
+      modulesOutDir: "@import-maps",
     }),
   ],
 } satisfies UserConfig;

@@ -35,7 +35,7 @@ export class VitePluginImportMapsStore {
   constructor(options: VitePluginImportMapsConfig) {
     this.defaultIntegrity = options.integrity || false;
     this.sharedDependencies = [
-      ...options.shared.map(this.normalizeDependencyInput),
+      ...options.imports.map(this.normalizeDependencyInput),
     ];
     this.log = options.log || false;
     if (options.modulesOutDir) {

@@ -13,8 +13,9 @@ export default defineConfig({
   plugins: [
     solid(),
     vitePluginNativeImportMaps({
-      shared: ["solid-js", "statebuilder", "solid-js/store", "solid-js/web"],
-      sharedOutDir: "shared",
+      log: true,
+      imports: ["solid-js", "statebuilder", "solid-js/store", "solid-js/web"],
+      modulesOutDir: "shared",
     }),
   ],
   build: {

@@ -19,7 +19,7 @@ export default defineConfig({
   },
   plugins: [
     vitePluginNativeImportMaps({
-      shared: [
+      imports: [
         { name: "react", entry: "./src/react-esm.ts" },
         {
           name: "react/jsx-runtime",

@@ -1,5 +1,7 @@
-import type {RegisteredDependency,
-  VitePluginImportMapsStore} from "./store.js";
+import type {
+  RegisteredDependency,
+  VitePluginImportMapsStore,
+} from "./store.js";
 
 export const PLUGIN_NAME = "vite-plugin-import-maps";
 
@@ -56,7 +58,7 @@ export interface VitePluginImportMapsConfig {
   /**
    * Dependencies shared by modules
    */
-  shared: SharedDependencyConfig;
+  imports: SharedDependencyConfig;
   /**
    * Directory where the shared chunks are stored
    *

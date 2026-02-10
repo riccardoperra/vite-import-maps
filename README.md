@@ -12,8 +12,7 @@ It's aimed at **micro-frontends**, **plugin systems**, and any setup where you l
 - Share dependencies (React, Solid, etc.) **without relying on CDNs**
 - Avoid bundling multiple copies of the same library
 - Expose npm packages or **your own local entry modules** through an import map
-- Keep **remote modules truly "native"**: remotes can be plain ESM files **without requiring a build step or special
-  plugins**
+- Keep **remote modules truly "native"**: remotes can be plain ESM files **without requiring you** to setup build step or use other plugins.
 
 ---
 
@@ -35,10 +34,10 @@ It's aimed at **micro-frontends**, **plugin systems**, and any setup where you l
 
 ```shell
 # pnpm
-pnpm add -D vite-plugin-native-import-maps
+pnpm i -D vite-import-maps
 
 # npm
-npm add -D vite-plugin-native-import-maps
+npm i -D vite-import-maps
 
 # yarn
 yarn add -D vite-import-maps
@@ -47,20 +46,23 @@ yarn add -D vite-import-maps
 ## Setup
 
 ```ts
-import {defineConfig} from "vite";
-import {vitePluginNativeImportMaps} from "vite-plugin-native-import-maps";
+import { defineConfig } from "vite";
+import { vitePluginNativeImportMaps } from "vite-plugin-native-import-maps";
 
+// Host app configuration
 export default defineConfig({
-    plugins: [
-        vitePluginNativeImportMaps({
-            shared: [
-                "react",
-                "react-dom",
-                // Expose a custom/local entry under a public specifier
-                {name: "react/jsx-runtime", entry: "./src/custom-jsx-runtime.ts"},
-            ],
-        }),
-    ],
+  plugins: [
+    vitePluginNativeImportMaps({
+      imports: [
+        // Wanna expose react with import maps?
+        "react",
+        "react-dom",
+        // Expose a custom/local entry under a public specifier
+        { name: "react/jsx-runtime", entry: "./src/custom-jsx-runtime.ts" },
+        { name: "my-app-shared-lib", entry: "./src/my-app-shared-oib.ts" },
+      ],
+    }),
+  ],
 });
 ```
 
@@ -72,7 +74,7 @@ export default defineConfig({
 
 - `imports` — List of modules to expose via the import map. Each entry can be a string (the specifier to expose, e.g.
   `"react"`) or an object with `name` (the specifier), `entry` (the local path or package to resolve), and optionally
-  `integrity` (enable SRI hash for that dependency).
+  `integrity` (enable SRI hash).
 
 - `modulesOutDir` — Directory prefix for emitted shared chunks in production. Defaults to `""` (root of output
   directory).
@@ -185,16 +187,16 @@ Add SRI hashes to verify module integrity:
 
 ```ts
 vitePluginNativeImportMaps({
-    shared: ["react", "react-dom"],
-    integrity: "sha384", // applies to all
+  imports: ["react", "react-dom"],
+  integrity: "sha384", // applies to all
 });
 
 // Or per-dependency:
 vitePluginNativeImportMaps({
-    shared: [
-        {name: "react", entry: "react", integrity: "sha384"},
-        {name: "react-dom", entry: "react-dom", integrity: false},
-    ],
+  imports: [
+    { name: "react", entry: "react", integrity: "sha384" },
+    { name: "react-dom", entry: "react-dom", integrity: false },
+  ],
 });
 ```
 
@@ -207,28 +209,28 @@ If a remote module uses a bundler, configure shared dependencies as `external` t
 **tsdown example:**
 
 ```ts
-import {defineConfig} from "tsdown";
+import { defineConfig } from "tsdown";
 
 export default defineConfig({
-    external: ["react", "react-dom", "react/jsx-runtime"],
+  external: ["react", "react-dom", "react/jsx-runtime"],
 });
 ```
 
 **Vite (library mode) example:**
 
 ```ts
-import {defineConfig} from "vite";
+import { defineConfig } from "vite";
 
 export default defineConfig({
-    build: {
-        lib: {
-            entry: "./src/index.ts",
-            formats: ["es"],
-        },
-        rollupOptions: {
-            external: ["react", "react-dom", "react/jsx-runtime"],
-        },
+  build: {
+    lib: {
+      entry: "./src/index.ts",
+      formats: ["es"],
     },
+    rollupOptions: {
+      external: ["react", "react-dom", "react/jsx-runtime"],
+    },
+  },
 });
 ```
 
@@ -238,8 +240,8 @@ export default defineConfig({
 
 ```ts
 vitePluginNativeImportMaps({
-    shared: ["react"],
-    outputAsFile: true, // /import-map.json
+  imports: ["react"],
+  outputAsFile: true, // /import-map.json
 });
 ```
 
@@ -309,9 +311,9 @@ You can integrate this plugin with **es-module-shims** in two common ways depend
 2. **In dev:** Resolves corresponding Vite dev-server URLs
 3. **In build:** Adds extra Rollup inputs so shared deps get dedicated output chunks, then records the final chunk URLs
 4. **Exposes** the mapping via:
-    - HTML injection (optional)
-    - `virtual:importmap` module (always)
-    - JSON file (optional)
+   - HTML injection (optional)
+   - `virtual:importmap` module (always)
+   - JSON file (optional)
 
 **Build snapshot:**
 
@@ -323,7 +325,7 @@ You can integrate this plugin with **es-module-shims** in two common ways depend
 ## Examples
 
 | Example                                                               | Description                              |
-|-----------------------------------------------------------------------|------------------------------------------|
+| --------------------------------------------------------------------- | ---------------------------------------- |
 | [`solidjs-host`](./examples/solidjs-host)                             | Solid.js host app                        |
 | [`solidjs-remote-counter`](./examples/solidjs-remote-counter)         | Solid.js remote module                   |
 | [`react-host-custom`](./examples/react-host-custom)                   | React host with custom ESM wrappers      |

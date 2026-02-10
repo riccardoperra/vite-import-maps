@@ -95,9 +95,10 @@ export function virtualChunksGeneratorPlugin(
           const url = `./${entry.fileName}`,
             packageName = entryImportMap.originalDependencyName;
           store.addDependency({ url, packageName, integrity });
-          config.logger.info(`[${name}] Added ${packageName}: ${url}`, {
-            timestamp: true,
-          });
+          store.log &&
+            config.logger.info(`[${name}] Added ${packageName}: ${url}`, {
+              timestamp: true,
+            });
         }
       }
     },

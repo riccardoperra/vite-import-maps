@@ -48,7 +48,7 @@ export function pluginImportMapsDevelopmentEnv(
 
               store.log &&
                 server.config.logger.info(
-                  `[${name}] Added ${dependency}: ${path}`,
+                  `[${name}] Added ${dependency.entry}: ${path}`,
                   { timestamp: true },
                 );
 
