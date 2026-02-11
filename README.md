@@ -47,7 +47,7 @@ yarn add -D vite-import-maps
 
 ```ts
 import { defineConfig } from "vite";
-import { viteImportMaps } from "vite-plugin-native-import-maps";
+import { viteImportMaps } from "vite-import-maps";
 
 // Host app configuration
 export default defineConfig({

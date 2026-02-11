@@ -128,7 +128,7 @@ importers:
       vite:
         specifier: ^7.3.1
         version: 7.3.1(@types/node@25.2.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.39.0)(tsx@4.21.0)
-      vite-plugin-native-import-maps:
+      vite-import-maps:
         specifier: workspace:*
         version: link:../..
 

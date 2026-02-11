@@ -1,4 +1,4 @@
-# vite-plugin-native-import-maps
+# vite-import-maps
 
 ## 0.1.4
 
