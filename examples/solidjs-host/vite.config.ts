@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import solid from "vite-plugin-solid";
-import { vitePluginNativeImportMaps } from "../../src";
+import { viteImportMaps } from "../../src";
 import * as path from "node:path";
 import * as fs from "node:fs";
 
@@ -12,7 +12,7 @@ fs.copyFileSync(
 export default defineConfig({
   plugins: [
     solid(),
-    vitePluginNativeImportMaps({
+    viteImportMaps({
       log: true,
       imports: ["solid-js", "statebuilder", "solid-js/store", "solid-js/web"],
       modulesOutDir: "shared",

@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
-import { vitePluginNativeImportMaps } from "../../src";
+import { viteImportMaps } from "../../src";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -18,7 +18,7 @@ export default defineConfig({
     manifest: true,
   },
   plugins: [
-    vitePluginNativeImportMaps({
+    viteImportMaps({
       imports: [
         { name: "react", entry: "./src/react-esm.ts" },
         {

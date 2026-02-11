@@ -7,7 +7,7 @@ import { pluginImportMapsAsModule } from "./import-map-module.js";
 import type { VitePluginImportMapsConfig } from "./config.js";
 import type { Plugin } from "vite";
 
-export function vitePluginNativeImportMaps(
+export function viteImportMaps(
   options: VitePluginImportMapsConfig,
 ): Array<Plugin> {
   const { injectImportMapsToHtml = true, outputAsFile } = options;
@@ -32,3 +32,5 @@ export function vitePluginNativeImportMaps(
 
   return plugins;
 }
+
+export default viteImportMaps;

@@ -47,12 +47,12 @@ yarn add -D vite-import-maps
 
 ```ts
 import { defineConfig } from "vite";
-import { vitePluginNativeImportMaps } from "vite-plugin-native-import-maps";
+import { viteImportMaps } from "vite-plugin-native-import-maps";
 
 // Host app configuration
 export default defineConfig({
   plugins: [
-    vitePluginNativeImportMaps({
+    viteImportMaps({
       // Add SRI hashes to verify module integrity in build
       integrity: 'sha-384',
       log: true,
@@ -172,7 +172,7 @@ This plugin handles all of that. You declare what to share, and it generates the
 Expose a local file that re-exports a dependency, giving you full control over what gets shared:
 
 ```ts
-vitePluginNativeImportMaps({
+viteImportMaps({
   imports: [
     { name: "react", entry: "./src/react-esm.ts" },
     { name: "react/jsx-runtime", entry: "./src/react-jsx-runtime.ts" },
@@ -189,13 +189,13 @@ vitePluginNativeImportMaps({
 Add SRI hashes to verify module integrity:
 
 ```ts
-vitePluginNativeImportMaps({
+viteImportMaps({
   imports: ["react", "react-dom"],
   integrity: "sha384", // applies to all
 });
 
 // Or per-dependency:
-vitePluginNativeImportMaps({
+viteImportMaps({
   imports: [
     { name: "react", entry: "react", integrity: "sha384" },
     { name: "react-dom", entry: "react-dom", integrity: false },
@@ -242,7 +242,7 @@ export default defineConfig({
 ### Serve Import Map as JSON File
 
 ```ts
-vitePluginNativeImportMaps({
+viteImportMaps({
   imports: ["react"],
   outputAsFile: true, // /import-map.json
 });

@@ -3,7 +3,7 @@ import type {
   VitePluginImportMapsStore,
 } from "./store.js";
 
-export const PLUGIN_NAME = "vite-plugin-import-maps";
+export const PLUGIN_NAME = "vite-import-maps";
 
 export function pluginName(name: string) {
   return `${PLUGIN_NAME}:${name}`;

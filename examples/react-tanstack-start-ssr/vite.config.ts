@@ -6,7 +6,7 @@ import viteReact from '@vitejs/plugin-react'
 import viteTsConfigPaths from 'vite-tsconfig-paths'
 import tailwindcss from '@tailwindcss/vite'
 
-import { vitePluginNativeImportMaps } from "../../src";
+import { viteImportMaps } from "../../src";
 
 fs.copyFileSync(
   path.resolve(
@@ -26,7 +26,7 @@ const config = defineConfig({
     tailwindcss(),
     tanstackStart(),
     viteReact(),
-    vitePluginNativeImportMaps({
+    viteImportMaps({
       imports: [
         { name: "react", entry: "./src/react-esm.ts" },
         { name: "react/jsx-runtime", entry: "./src/react-jsx-runtime.ts" },

@@ -1,5 +1,5 @@
 import path from "node:path";
-import { vitePluginNativeImportMaps } from "../../../src/index.js";
+import { viteImportMaps } from "../../../src/index.js";
 import type { UserConfig } from "vite";
 
 const root = path.resolve(path.join(import.meta.dirname));
@@ -27,7 +27,7 @@ export default {
     },
   },
   plugins: [
-    vitePluginNativeImportMaps({
+    viteImportMaps({
       integrity: "sha384",
       imports: ["shared-lib"],
       modulesOutDir: "@import-maps",
