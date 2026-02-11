@@ -1,5 +1,11 @@
 # vite-import-maps
 
+## 0.2.0
+
+### Minor Changes
+
+- 748ff1e: Renamed vitePluginNativeImportMaps to viteImportMaps. Add default export.
+
 ## 0.1.4
 
 ### Patch Changes
