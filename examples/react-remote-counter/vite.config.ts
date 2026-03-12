@@ -7,7 +7,7 @@ export default defineConfig({
       entry: './src/index.tsx',
       formats: ['es']
     },
-    rollupOptions: {
+    rolldownOptions: {
       external: [
         'react',
         'react/jsx-runtime'

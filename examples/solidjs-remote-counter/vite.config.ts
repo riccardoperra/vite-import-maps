@@ -7,7 +7,7 @@ export default defineConfig({
       entry: './src/index.tsx',
       formats: ['es']
     },
-    rollupOptions: {
+    rolldownOptions: {
       external: ['solid-js', 'solid-js/web', 'statebuilder', 'solid-js/store'],
     }
   },
