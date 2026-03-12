@@ -20,7 +20,7 @@ export default {
   build: {
     outDir: buildOutput,
     minify: false,
-    rollupOptions: {
+    rolldownOptions: {
       input: {
         index: path.resolve(path.join(root, "./index.html")),
       },

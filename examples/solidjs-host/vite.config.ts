@@ -19,7 +19,7 @@ export default defineConfig({
     }),
   ],
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       input: {
         index: path.resolve("./index.html"),
       },
