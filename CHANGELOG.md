@@ -1,5 +1,11 @@
 # vite-import-maps
 
+## 0.2.1
+
+### Patch Changes
+
+- 5109dc0: Update dependencies to support vite 8
+
 ## 0.2.0
 
 ### Minor Changes
