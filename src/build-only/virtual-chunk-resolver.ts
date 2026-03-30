@@ -1,10 +1,8 @@
-import { existsSync, readFileSync } from "node:fs";
 import { pluginName } from "../config.js";
+import path from "node:path/posix";
 import {
   buildCommonJsWrapperCode,
   collectCommonJsNamedExports,
-  collectCommonJsNamedExportsFromAst,
-  getParseLang,
   isVite8CommonJsModule,
 } from "./commonjs.js";
 import type { Plugin } from "vite";
@@ -57,7 +55,8 @@ export function virtualChunksResolverPlugin(
         return;
       }
 
-      const [fileName] = resolvedId.id.split("?");
+      const [_fileName] = resolvedId.id.split("?");
+      const fileName = path.resolve(path.normalize(_fileName));
       const moduleInfo =
         this.getModuleInfo(fileName) ??
         (await this.load({
