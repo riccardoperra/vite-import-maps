@@ -1,17 +1,15 @@
-name: PR Test
+name: Pull Request
 
 on:
+  workflow_dispatch:
   pull_request:
 
-permissions:
-  id-token: write
-  contents: write
-  pull-requests: write
+permissions: {}
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
-  release:
+  pr:
     name: Release
     runs-on: ubuntu-latest
     steps:
@@ -23,16 +21,8 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: "pnpm"
-
-      - name: Creating .npmrc
-        run: |
-          cat << EOF > "$HOME/.npmrc"
-            //registry.npmjs.org/:_authToken=$NPM_TOKEN
-          EOF
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install Dependencies
         run: pnpm install
@@ -42,3 +32,6 @@ jobs:
 
       - name: Test
         run: pnpm run test
+
+      - name: Publish PR review
+        run: pnpm dlx pkg-pr-new publish

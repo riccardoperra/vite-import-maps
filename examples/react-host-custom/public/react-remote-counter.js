@@ -1,12 +1,12 @@
-import { jsxs as n } from "react/jsx-runtime";
-import { useState as r } from "react";
-function c() {
-  const [t, o] = r(0);
-  return /* @__PURE__ */ n("button", { onClick: () => o((e) => e + 1), children: [
-    "This is a remote React counter: ",
-    t
-  ] });
+import { useState as e } from "react";
+import { jsxs as t } from "react/jsx-runtime";
+//#region src/index.tsx
+function n() {
+	let [n, r] = e(0);
+	return /* @__PURE__ */ t("button", {
+		onClick: () => r((e) => e + 1),
+		children: ["This is a remote React counter: ", n]
+	});
 }
-export {
-  c as default
-};
+//#endregion
+export { n as default };
