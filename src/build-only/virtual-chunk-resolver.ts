@@ -1,6 +1,8 @@
+import { existsSync, readFileSync } from "node:fs";
 import { pluginName } from "../config.js";
 import {
   buildCommonJsWrapperCode,
+  collectCommonJsNamedExports,
   collectCommonJsNamedExportsFromAst,
   getParseLang,
   isVite8CommonJsModule,
@@ -58,67 +60,30 @@ export function virtualChunksResolverPlugin(
       let hasDefaultExport = false;
       const [fileName] = resolvedId.id.split("?");
       const moduleInfo = this.getModuleInfo(fileName);
+
       const loadedModuleInfo =
         moduleInfo ??
         (await this.load({ id: fileName, resolveDependencies: true }));
-      const commonJsNamedExports =
-        loadedModuleInfo.code == null
-          ? null
-          : collectCommonJsNamedExportsFromAst(
-              this.parse(loadedModuleInfo.code, {
-                lang: getParseLang(fileName),
-              }),
-            );
-      const isVite8CommonJs = isVite8CommonJsModule(
+
+      const isCjs = isVite8CommonJsModule(
         loadedModuleInfo.inputFormat,
         fileName,
       );
-      const shouldUseCommonJsWrapper = !moduleInfo && isVite8CommonJs;
 
-      if (moduleInfo) {
-        hasDefaultExport = moduleInfo.hasDefaultExport ?? false;
-        if (!hasDefaultExport) {
-          // commonjs workarounds to detect default export
-          // and then add it to the virtual chunk
-          if (
-            "commonjs" in moduleInfo.meta &&
-            moduleInfo.meta.commonjs.isCommonJS
-          ) {
-            const requires = moduleInfo.meta.commonjs.requires;
-            if (Array.isArray(requires)) {
-              for (const require of requires) {
-                if (require.resolved) {
-                  const innerResolvedId = this.getModuleInfo(
-                    require.resolved.id,
-                  );
-                  if (!innerResolvedId) break;
-                  hasDefaultExport = innerResolvedId.hasDefaultExport || false;
-                  if (hasDefaultExport) break;
-                  if (innerResolvedId.exports.includes("__require")) {
-                    hasDefaultExport = true;
-                    break;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-
-      if (shouldUseCommonJsWrapper && commonJsNamedExports !== null) {
+      if (isCjs) {
+        const commonJsNamedExports =
+          await collectCommonJsNamedExports(fileName);
         return {
           moduleSideEffects: "no-treeshake",
           code: buildCommonJsWrapperCode(
             chunk.originalDependencyName,
+            fileName,
             commonJsNamedExports,
           ),
         };
       }
 
-      let code = `export * from "${chunk.originalDependencyName}"`;
-      if (hasDefaultExport) {
-        code += `\nexport { default } from '${chunk.originalDependencyName}'`;
-      }
+      const code = `export * from "${chunk.originalDependencyName}"`;
 
       return {
         moduleSideEffects: "no-treeshake",
