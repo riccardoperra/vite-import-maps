@@ -1,14 +1,14 @@
 import path from "node:path";
 import { expect, test, vi } from "vitest";
 import { build } from "vite";
-import type { OutputAsset, RollupOutput } from "rollup";
+import type { OutputAsset, RolldownOutput } from "rolldown";
 
 test("build project with right import map", async () => {
   const { default: config } =
     await import("./fixture/basic/vite.config-test.js");
   const buildOutput = config.build.outDir;
 
-  const result = (await build(config)) as RollupOutput;
+  const result = (await build(config)) as RolldownOutput;
 
   expect(result.output).toHaveLength(2);
   const [sharedDependency, indexHtml] = result.output;
