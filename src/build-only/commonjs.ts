@@ -42,9 +42,9 @@ export function buildCommonJsWrapperCode(
 ): string {
   const require = createRequire(import.meta.url);
   let code = [
-    `import * as cjsNs from "${dependencyName}";`,
-    `const cjsMod = cjsNs.default ?? cjsNs;`,
-    `export default cjsMod;`,
+    `
+    import * as cjsNs from "${dependencyName}";
+    export * from "${dependencyName}";`,
   ].join("\n");
 
   if (namedExports.length > 0) {

@@ -36,14 +36,4 @@ export default defineConfig({
       modulesOutDir: "shared",
     }),
   ],
-  legacy: {
-    inconsistentCjsInterop: true,
-  },
-  build: {
-    commonjsOptions: {
-      include: ["react"],
-      defaultIsModuleExports: true,
-      transformMixedEsModules: true,
-    },
-  },
 });

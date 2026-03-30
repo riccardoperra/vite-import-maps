@@ -57,18 +57,18 @@ export function virtualChunksResolverPlugin(
         return;
       }
 
-      let hasDefaultExport = false;
       const [fileName] = resolvedId.id.split("?");
-      const moduleInfo = this.getModuleInfo(fileName);
+      const moduleInfo =
+        this.getModuleInfo(fileName) ??
+        (await this.load({
+          id: fileName,
+          resolveDependencies: true,
+        }));
 
-      const loadedModuleInfo =
-        moduleInfo ??
-        (await this.load({ id: fileName, resolveDependencies: true }));
-
-      const isCjs = isVite8CommonJsModule(
-        loadedModuleInfo.inputFormat,
-        fileName,
-      );
+      const isCjs =
+        isVite8CommonJsModule(moduleInfo?.inputFormat, fileName) ||
+        // Fallback for Vite < 8 which still uses rollup/esbuild
+        "commonjs" in moduleInfo.meta;
 
       if (isCjs) {
         const commonJsNamedExports =
