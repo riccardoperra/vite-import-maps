@@ -1,5 +1,6 @@
 import { createRequire } from "node:module";
-import {normalize, resolve as pathResolve} from 'node:path';
+import { platform } from "node:os";
+import { normalize, resolve as pathResolve } from "node:path";
 import { resolve } from "mlly";
 
 export function isCommonJsFile(fileName: string): boolean {
@@ -17,7 +18,11 @@ export async function collectCommonJsNamedExports(fileName: string) {
     url: import.meta.url,
   });
   const require = createRequire(import.meta.url);
-  const mod = await require(pathResolve(url.replace("file://", "")));
+  const mod = await require(
+    platform() === "win32"
+      ? normalize(url.replace("file:///", ""))
+      : url.replace("file://", ""),
+  );
   return Object.keys(mod);
 }
 
