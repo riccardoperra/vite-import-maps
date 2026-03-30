@@ -1,4 +1,4 @@
-import path from "node:path";
+import * as path from "node:path/posix";
 import { createHash } from "node:crypto";
 import { pluginName } from "../config.js";
 import {

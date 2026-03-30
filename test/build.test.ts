@@ -1,7 +1,36 @@
 import path from "node:path";
-import { expect, test, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { build } from "vite";
 import type { OutputAsset, RolldownOutput } from "rolldown";
+
+const cryptoMockState = vi.hoisted(() => ({
+  digest: undefined as string | undefined,
+}));
+
+vi.mock("node:crypto", async (importOriginal) => {
+  const original = await importOriginal<typeof import("node:crypto")>();
+
+  return {
+    ...original,
+    createHash: vi.fn((algorithm: string) => {
+      if (!cryptoMockState.digest) {
+        return original.createHash(algorithm);
+      }
+
+      const hash = {
+        update: vi.fn(() => hash),
+        digest: vi.fn(() => cryptoMockState.digest),
+      };
+
+      return hash as ReturnType<typeof original.createHash>;
+    }),
+  };
+});
+
+afterEach(() => {
+  cryptoMockState.digest = undefined;
+  vi.clearAllMocks();
+});
 
 test("build project with right import map", async () => {
   const { default: config } =
@@ -34,19 +63,12 @@ test("build project with right import map", async () => {
 });
 
 test("include integrity in import maps when enabled", async () => {
+  cryptoMockState.digest = "abc123";
   const { default: config } =
     await import("./fixture/with-integrity/vite.config-test.js");
   const buildOutput = config.build.outDir;
-  vi.mock(import("node:crypto"), async (importOriginal) => ({
-    ...(await importOriginal()),
-    createHash: vi.fn(() => ({
-      update: vi.fn(() => ({
-        digest: vi.fn(() => "abc123"),
-      })),
-    })) as any,
-  }));
 
-  const result = (await build(config)) as RollupOutput;
+  const result = (await build(config)) as RolldownOutput;
 
   expect(result.output).toHaveLength(2);
   const [sharedDependency, indexHtml] = result.output;

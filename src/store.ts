@@ -1,4 +1,4 @@
-import path from "node:path";
+import * as path from "node:path/posix";
 import { normalizeDependencyName } from "./utils.js";
 import type {
   DependencyIntegrityCheck,
@@ -78,7 +78,7 @@ export class VitePluginImportMapsStore {
   }
 
   getEntrypointPath(entrypoint: string): string {
-    return path.join(this.modulesOutDir, entrypoint);
+    return path.posix.join(this.modulesOutDir, entrypoint);
   }
 
   addInput(input: NormalizedDependencyInput): ImportMapBuildChunkEntrypoint {
