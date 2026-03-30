@@ -31,20 +31,15 @@ export function isVite8CommonJsModule(
   );
 }
 
-export function hasOnlyDefaultExport(exports: string[] | undefined): boolean {
-  return exports?.length === 1 && exports[0] === "default";
-}
-
 export function buildCommonJsWrapperCode(
   dependencyName: string,
   fileName: string,
   namedExports: Array<string>,
 ): string {
-  const require = createRequire(import.meta.url);
   let code = [
-    `
-    import * as cjsNs from "${dependencyName}";
-    export * from "${dependencyName}";`,
+    `import * as cjsNs from "${dependencyName}";`,
+    `const cjsMod = cjsNs.default ?? cjsNs;`,
+    `export default cjsMod;`,
   ].join("\n");
 
   if (namedExports.length > 0) {

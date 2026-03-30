@@ -1,5 +1,5 @@
-import { pluginName } from "../config.js";
 import path from "node:path/posix";
+import { pluginName } from "../config.js";
 import {
   buildCommonJsWrapperCode,
   collectCommonJsNamedExports,
@@ -56,7 +56,7 @@ export function virtualChunksResolverPlugin(
       }
 
       const [_fileName] = resolvedId.id.split("?");
-      const fileName = path.resolve(path.normalize(_fileName));
+      const fileName = _fileName;
       const moduleInfo =
         this.getModuleInfo(fileName) ??
         (await this.load({
@@ -65,7 +65,7 @@ export function virtualChunksResolverPlugin(
         }));
 
       const isCjs =
-        isVite8CommonJsModule(moduleInfo?.inputFormat, fileName) ||
+        isVite8CommonJsModule(moduleInfo.inputFormat, fileName) ||
         // Fallback for Vite < 8 which still uses rollup/esbuild
         "commonjs" in moduleInfo.meta;
 
