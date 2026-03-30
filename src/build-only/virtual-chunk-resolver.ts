@@ -1,6 +1,15 @@
 import { pluginName } from "../config.js";
-import type { ImportMapBuildChunkEntrypoint, VitePluginImportMapsStore } from "../store.js";
+import {
+  buildCommonJsWrapperCode,
+  collectCommonJsNamedExportsFromAst,
+  getParseLang,
+  isVite8CommonJsModule,
+} from "./commonjs.js";
 import type { Plugin } from "vite";
+import type {
+  ImportMapBuildChunkEntrypoint,
+  VitePluginImportMapsStore,
+} from "../store.js";
 
 export const VIRTUAL_ID_PREFIX = `\0virtual:import-map-chunk`;
 
@@ -8,12 +17,14 @@ export function getVirtualFileName(name: string) {
   return `${VIRTUAL_ID_PREFIX}/${name}`;
 }
 
-export function virtualChunksResolverPlugin(store: VitePluginImportMapsStore): Plugin {
+export function virtualChunksResolverPlugin(
+  store: VitePluginImportMapsStore,
+): Plugin {
   return {
     name: pluginName("build:virtual-chunks-loader"),
     apply: "build",
     resolveId(id) {
-      if (this.environment.name === 'ssr') return;
+      if (this.environment.name === "ssr") return;
       if (id.startsWith(VIRTUAL_ID_PREFIX)) {
         const normalizedId = id.slice(VIRTUAL_ID_PREFIX.length + 1);
         return {
@@ -35,7 +46,7 @@ export function virtualChunksResolverPlugin(store: VitePluginImportMapsStore): P
       if (!virtualModuleInfo) {
         return;
       }
-      const chunk = virtualModuleInfo.meta[
+      const chunk: ImportMapBuildChunkEntrypoint = virtualModuleInfo.meta[
         "info"
       ] as ImportMapBuildChunkEntrypoint;
 
@@ -47,6 +58,22 @@ export function virtualChunksResolverPlugin(store: VitePluginImportMapsStore): P
       let hasDefaultExport = false;
       const [fileName] = resolvedId.id.split("?");
       const moduleInfo = this.getModuleInfo(fileName);
+      const loadedModuleInfo =
+        moduleInfo ??
+        (await this.load({ id: fileName, resolveDependencies: true }));
+      const commonJsNamedExports =
+        loadedModuleInfo.code == null
+          ? null
+          : collectCommonJsNamedExportsFromAst(
+              this.parse(loadedModuleInfo.code, {
+                lang: getParseLang(fileName),
+              }),
+            );
+      const isVite8CommonJs = isVite8CommonJsModule(
+        loadedModuleInfo.inputFormat,
+        fileName,
+      );
+      const shouldUseCommonJsWrapper = !moduleInfo && isVite8CommonJs;
 
       if (moduleInfo) {
         hasDefaultExport = moduleInfo.hasDefaultExport ?? false;
@@ -67,7 +94,7 @@ export function virtualChunksResolverPlugin(store: VitePluginImportMapsStore): P
                   if (!innerResolvedId) break;
                   hasDefaultExport = innerResolvedId.hasDefaultExport || false;
                   if (hasDefaultExport) break;
-                  if (innerResolvedId.exports?.includes("__require")) {
+                  if (innerResolvedId.exports.includes("__require")) {
                     hasDefaultExport = true;
                     break;
                   }
@@ -76,6 +103,16 @@ export function virtualChunksResolverPlugin(store: VitePluginImportMapsStore): P
             }
           }
         }
+      }
+
+      if (shouldUseCommonJsWrapper && commonJsNamedExports !== null) {
+        return {
+          moduleSideEffects: "no-treeshake",
+          code: buildCommonJsWrapperCode(
+            chunk.originalDependencyName,
+            commonJsNamedExports,
+          ),
+        };
       }
 
       let code = `export * from "${chunk.originalDependencyName}"`;

@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "NodeNext",
+    "rootDir": "./",
     "moduleResolution": "nodenext",
     "lib": ["ESNext"],
     "skipLibCheck": true,
@@ -12,5 +13,7 @@
     "isolatedDeclarations": true,
     "erasableSyntaxOnly": true,
     "isolatedModules": true
-  }
+  },
+  "include": ["src", "test"],
+  "exclude": ["examples"]
 }

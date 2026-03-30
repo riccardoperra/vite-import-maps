@@ -1,4 +1,5 @@
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { afterEach, expect, test, vi } from "vitest";
 import { build } from "vite";
 import type { OutputAsset, RolldownOutput } from "rolldown";
@@ -90,6 +91,46 @@ test("include integrity in import maps when enabled", async () => {
       [`./${sharedDependency.fileName}`]: "sha384-abc123",
     },
   });
+  expect(indexHtml.type).toEqual("asset");
+  expect((indexHtml as OutputAsset).source).toContain(
+    `<script type="importmap">${expectedImportMap}</script>`,
+  );
+});
+
+test("preserve default exports for commonjs shared dependencies", async () => {
+  const { default: config } =
+    await import("./fixture/with-commonjs-default/vite.config-test.js");
+  const buildOutput = config.build.outDir;
+
+  const result = (await build(config)) as RolldownOutput;
+
+  expect(result.output).toHaveLength(2);
+  const [sharedDependency, indexHtml] = result.output;
+
+  expect(sharedDependency.type).toEqual("chunk");
+  expect(sharedDependency.name).toEqual("@import-maps/shared-lib");
+  expect(sharedDependency.isEntry).toEqual(false);
+  expect(sharedDependency.fileName).toSatisfy((name) =>
+    name.startsWith("assets/@import-maps/shared-lib-"),
+  );
+  expect(sharedDependency.code.trim().length).toBeGreaterThan(0);
+  await expect(sharedDependency.code).toMatchFileSnapshot(
+    path.join(buildOutput, sharedDependency.fileName),
+  );
+
+  const builtChunk = await import(
+    pathToFileURL(path.join(buildOutput, sharedDependency.fileName)).href
+  );
+
+  expect(builtChunk.default("World")).toEqual("Hello World");
+  expect(builtChunk.foo("World")).toEqual("Hello World");
+
+  const expectedImportMap = JSON.stringify({
+    imports: {
+      "shared-lib": `./${sharedDependency.fileName}`,
+    },
+  });
+
   expect(indexHtml.type).toEqual("asset");
   expect((indexHtml as OutputAsset).source).toContain(
     `<script type="importmap">${expectedImportMap}</script>`,
