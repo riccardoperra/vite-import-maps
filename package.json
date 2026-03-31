@@ -18,7 +18,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "test": "vitest --config ./vitest.config.ts",
+    "test": "pnpm --filter vite-import-maps-integration test",
     "build": "tsdown",
     "format": "prettier --write .",
     "ci:publish": "changeset publish",
