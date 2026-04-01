@@ -18,15 +18,19 @@ export default defineConfig({
   plugins: [
     react(),
     viteImportMaps({
-      integrity: 'sha384',
+      integrity: "sha384",
       imports: [
-        { name: "react", entry: "./src/react-esm.ts", integrity: "sha256" },
+        {
+          name: "react",
+          entry: "react",
+          integrity: "sha256",
+        },
         {
           name: "react/jsx-runtime",
-          entry: "./src/react-jsx-runtime.ts",
+          entry: "react/jsx-runtime",
           integrity: "sha512",
         },
-        { name: "react-dom", entry: "react-dom"},
+        { name: "react-dom", entry: "react-dom" },
       ],
       log: true,
       modulesOutDir: "shared",

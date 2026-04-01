@@ -1,6 +1,15 @@
+import path from "node:path/posix";
 import { pluginName } from "../config.js";
-import type { ImportMapBuildChunkEntrypoint, VitePluginImportMapsStore } from "../store.js";
+import {
+  buildCommonJsWrapperCode,
+  collectCommonJsNamedExports,
+  isVite8CommonJsModule,
+} from "./commonjs.js";
 import type { Plugin } from "vite";
+import type {
+  ImportMapBuildChunkEntrypoint,
+  VitePluginImportMapsStore,
+} from "../store.js";
 
 export const VIRTUAL_ID_PREFIX = `\0virtual:import-map-chunk`;
 
@@ -8,12 +17,14 @@ export function getVirtualFileName(name: string) {
   return `${VIRTUAL_ID_PREFIX}/${name}`;
 }
 
-export function virtualChunksResolverPlugin(store: VitePluginImportMapsStore): Plugin {
+export function virtualChunksResolverPlugin(
+  store: VitePluginImportMapsStore,
+): Plugin {
   return {
     name: pluginName("build:virtual-chunks-loader"),
     apply: "build",
     resolveId(id) {
-      if (this.environment.name === 'ssr') return;
+      if (this.environment.name === "ssr") return;
       if (id.startsWith(VIRTUAL_ID_PREFIX)) {
         const normalizedId = id.slice(VIRTUAL_ID_PREFIX.length + 1);
         return {
@@ -35,7 +46,7 @@ export function virtualChunksResolverPlugin(store: VitePluginImportMapsStore): P
       if (!virtualModuleInfo) {
         return;
       }
-      const chunk = virtualModuleInfo.meta[
+      const chunk: ImportMapBuildChunkEntrypoint = virtualModuleInfo.meta[
         "info"
       ] as ImportMapBuildChunkEntrypoint;
 
@@ -44,44 +55,34 @@ export function virtualChunksResolverPlugin(store: VitePluginImportMapsStore): P
         return;
       }
 
-      let hasDefaultExport = false;
-      const [fileName] = resolvedId.id.split("?");
-      const moduleInfo = this.getModuleInfo(fileName);
+      const [_fileName] = resolvedId.id.split("?");
+      const fileName = _fileName;
+      const moduleInfo =
+        this.getModuleInfo(fileName) ??
+        (await this.load({
+          id: fileName,
+          resolveDependencies: true,
+        }));
 
-      if (moduleInfo) {
-        hasDefaultExport = moduleInfo.hasDefaultExport ?? false;
-        if (!hasDefaultExport) {
-          // commonjs workarounds to detect default export
-          // and then add it to the virtual chunk
-          if (
-            "commonjs" in moduleInfo.meta &&
-            moduleInfo.meta.commonjs.isCommonJS
-          ) {
-            const requires = moduleInfo.meta.commonjs.requires;
-            if (Array.isArray(requires)) {
-              for (const require of requires) {
-                if (require.resolved) {
-                  const innerResolvedId = this.getModuleInfo(
-                    require.resolved.id,
-                  );
-                  if (!innerResolvedId) break;
-                  hasDefaultExport = innerResolvedId.hasDefaultExport || false;
-                  if (hasDefaultExport) break;
-                  if (innerResolvedId.exports?.includes("__require")) {
-                    hasDefaultExport = true;
-                    break;
-                  }
-                }
-              }
-            }
-          }
-        }
+      const isCjs =
+        isVite8CommonJsModule(moduleInfo.inputFormat, fileName) ||
+        // Fallback for Vite < 8 which still uses rollup/esbuild
+        "commonjs" in moduleInfo.meta;
+
+      if (isCjs) {
+        const commonJsNamedExports =
+          await collectCommonJsNamedExports(fileName);
+        return {
+          moduleSideEffects: "no-treeshake",
+          code: buildCommonJsWrapperCode(
+            chunk.originalDependencyName,
+            fileName,
+            commonJsNamedExports,
+          ),
+        };
       }
 
-      let code = `export * from "${chunk.originalDependencyName}"`;
-      if (hasDefaultExport) {
-        code += `\nexport { default } from '${chunk.originalDependencyName}'`;
-      }
+      const code = `export * from "${chunk.originalDependencyName}"`;
 
       return {
         moduleSideEffects: "no-treeshake",

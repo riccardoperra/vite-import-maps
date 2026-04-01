@@ -1,0 +1,7 @@
+{
+  "imports": {
+    "react-dom": "./@import-maps/react-dom.js",
+    "react": "./@import-maps/react.js",
+    "react/jsx-runtime": "./@import-maps/react_jsx-runtime.js"
+  }
+}

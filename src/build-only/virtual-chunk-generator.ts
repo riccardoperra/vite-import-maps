@@ -1,4 +1,4 @@
-import path from "node:path";
+import * as path from "node:path/posix";
 import { createHash } from "node:crypto";
 import { pluginName } from "../config.js";
 import {
@@ -31,7 +31,7 @@ export function virtualChunksGeneratorPlugin(
           // a local file doesn't have to be handled like a virtual
           // since I expect their source is already correct and doesn't
           // need to be transformed
-          const id = path.resolve(input.idToResolve);
+          const id = path.normalize(path.resolve(input.idToResolve));
           if (!localModules.has(id)) {
             this.emitFile({
               type: "chunk",
@@ -75,7 +75,8 @@ export function virtualChunksGeneratorPlugin(
           (entry.facadeModuleId.startsWith(VIRTUAL_ID_PREFIX) ||
             path.isAbsolute(entry.facadeModuleId))
         ) {
-          const entryImportMap = handledModules.get(entry.facadeModuleId);
+          const facadeModuleId = path.normalize(entry.facadeModuleId);
+          const entryImportMap = handledModules.get(facadeModuleId);
           if (!entryImportMap) continue;
 
           // TODO: https://vite.dev/guide/backend-integration

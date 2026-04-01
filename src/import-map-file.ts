@@ -29,7 +29,7 @@ export function pluginImportMapsAsFile(
 
       this.emitFile({
         type: "asset",
-        fileName: `/${name}.json`,
+        fileName: `${name}.json`,
         source: JSON.stringify(json, null, 2),
       });
     },
