@@ -1,5 +1,11 @@
 # vite-import-maps
 
+## 0.2.3
+
+### Patch Changes
+
+- ada5153: Fix plugin exports
+
 ## 0.2.2
 
 ### Patch Changes
