@@ -78,7 +78,5 @@
       "versions": ">=6.0.0"
     }
   },
-  "dependencies": {
-    "oxc-parser": "^0.121.0"
-  }
+  "dependencies": {}
 }

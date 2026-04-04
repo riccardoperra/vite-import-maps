@@ -23,6 +23,7 @@ export function pluginImportMapsDevelopmentEnv(
     // Here we will not inject any import map script, but we will track the dependencies into the store
     async transformIndexHtml(_, { server }) {
       if (!server) return;
+      const loggingContext = store.log ? this : undefined;
       const { pluginContainer, config } = server,
         // This is just an improvement to avoid unnecessary calls to the pluginContainer
         // We get the depsOptimizer config to retrieve the latest browser hash.
@@ -45,12 +46,6 @@ export function pluginImportMapsDevelopmentEnv(
               if (!resolvedId) return null;
 
               const path = fileToUrl(resolvedId.id, config.root);
-
-              store.log &&
-                server.config.logger.info(
-                  `[${name}] Added ${dependency.entry}: ${path}`,
-                  { timestamp: true },
-                );
 
               return {
                 name: dependency.name,

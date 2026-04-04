@@ -22,7 +22,7 @@ export default defineConfig({
       imports: [
         {
           name: "react",
-          entry: "react",
+          entry: "./src/react-esm.ts",
           integrity: "sha256",
         },
         {
