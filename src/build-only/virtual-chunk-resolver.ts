@@ -30,7 +30,7 @@ export function virtualChunksResolverPlugin(
   return {
     name,
     apply: "build",
-    resolveId(id) {
+    resolveId(this, id) {
       if (this.environment.name === "ssr") return;
       if (id.startsWith(VIRTUAL_ID_PREFIX)) {
         const normalizedId = id.slice(VIRTUAL_ID_PREFIX.length + 1);

@@ -46,6 +46,7 @@
     "@changesets/cli": "^2.30.0",
     "@tanstack/eslint-config": "^0.4.0",
     "@types/node": "^25.5.0",
+    "cjs-module-lexer": "^2.2.0",
     "eslint": "^10.1.0",
     "mlly": "^1.8.2",
     "prettier": "^3.8.1",
@@ -77,6 +78,5 @@
       "type": "compatible",
       "versions": ">=6.0.0"
     }
-  },
-  "dependencies": {}
+  }
 }

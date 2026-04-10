@@ -27,7 +27,7 @@ export default defineConfig({
         },
         {
           name: "react/jsx-runtime",
-          entry: "react/jsx-runtime",
+          entry: "./src/react-jsx-runtime.ts",
           integrity: "sha512",
         },
         { name: "react-dom", entry: "react-dom" },
