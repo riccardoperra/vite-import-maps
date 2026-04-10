@@ -37,7 +37,6 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-
 test("build project with right import map", async () => {
   const { buildOutput, result } = await buildFixture(
     "./fixture/basic/vite.config-test.js",
@@ -94,7 +93,7 @@ test("preserve default exports for commonjs shared dependencies", async () => {
   });
 
   const builtChunk = await import(
-    pathToFileURL(path.join(buildOutput, sharedDependency.fileName)).href,
+    pathToFileURL(path.join(buildOutput, sharedDependency.fileName)).href
   );
 
   expect(builtChunk.default("World")).toEqual("Hello World");
@@ -103,6 +102,48 @@ test("preserve default exports for commonjs shared dependencies", async () => {
   const expectedImportMap: ImportMap = {
     imports: {
       "shared-lib": `./${sharedDependency.fileName}`,
+    },
+  };
+
+  expectImportMapMatchesOutputs(result, expectedImportMap);
+});
+
+test("imports commonjs modules that uses browser globals", async () => {
+  const { buildOutput, result } = await buildFixture(
+    "./fixture/with-cjs-that-use-browser-globals/vite.config-test.js",
+  );
+  const sharedDependency = await expectSharedChunk({
+    result,
+    buildOutput,
+    name: "@import-maps/shared-lib",
+    fileName: "@import-maps/shared-lib.js",
+  });
+
+  const expectedImportMap: ImportMap = {
+    imports: {
+      "shared-lib": `./${sharedDependency.fileName}`,
+    },
+  };
+
+  expectImportMapMatchesOutputs(result, expectedImportMap);
+});
+
+// https://github.com/riccardoperra/vite-import-maps/issues/18
+test("GH-18 imports commonjs classnames", async () => {
+  const { buildOutput, result } = await buildFixture(
+    "./fixture/with-cjs-classnames/vite.config-test.js",
+  );
+
+  await expectSharedChunk({
+    result,
+    buildOutput,
+    name: "@import-maps/classnames",
+    fileName: "@import-maps/classnames.js",
+  });
+
+  const expectedImportMap: ImportMap = {
+    imports: {
+      classnames: `./@import-maps/classnames.js`,
     },
   };
 

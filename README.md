@@ -5,14 +5,17 @@
   <a href="https://github.com/riccardoperra/vite-import-maps/actions/workflows/ci.yml"><img src="https://github.com/riccardoperra/vite-import-maps/actions/workflows/release.yml/badge.svg?branch=main" alt="build status"></a>
 </p>
 
-A Vite plugin that generates and keeps **browser [import maps](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap)** in sync with your Vite dev server and production build.
+A Vite plugin that generates and keeps *
+*browser [import maps](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap)** in
+sync with your Vite dev server and production build.
 
 It's aimed at **micro-frontends**, **plugin systems**, and any setup where you load ESM modules at runtime and want to:
 
 - Share dependencies (React, Solid, etc.) **without relying on CDNs**
 - Avoid bundling multiple copies of the same library
 - Expose npm packages or **your own local entry modules** through an import map
-- Keep **remote modules truly "native"**: remotes can be plain ESM files **without requiring you** to setup build step or use other plugins.
+- Keep **remote modules truly "native"**: remotes can be plain ESM files **without requiring you** to setup build step
+  or use other plugins.
 
 ---
 
@@ -22,6 +25,7 @@ It's aimed at **micro-frontends**, **plugin systems**, and any setup where you l
 - [Setup](#setup)
 - [Configuration](#configuration)
 - [Do You Need This Plugin?](#do-you-need-this-plugin)
+- [CommonJS Compatibility](#commonjs-compatibility)
 - [Recipes](#recipes)
 - [Troubleshooting](#troubleshooting)
 - [How It Works](#how-it-works)
@@ -46,26 +50,26 @@ yarn add -D vite-import-maps
 ## Setup
 
 ```ts
-import { defineConfig } from "vite";
-import { viteImportMaps } from "vite-import-maps";
+import {defineConfig} from "vite";
+import {viteImportMaps} from "vite-import-maps";
 
 // Host app configuration
 export default defineConfig({
-  plugins: [
-    viteImportMaps({
-      // Add SRI hashes to verify module integrity in build
-      integrity: 'sha-384',
-      log: true,
-      imports: [
-        // Wanna expose react with import maps?
-        "react",
-        "react-dom",
-        // Expose a custom/local entry under a public specifier
-        { name: "react/jsx-runtime", entry: "./src/custom-jsx-runtime.ts" },
-        { name: "my-app-shared-lib", entry: "./src/my-app-shared-oib.ts" },
-      ],
-    }),
-  ],
+    plugins: [
+        viteImportMaps({
+            // Add SRI hashes to verify module integrity in build
+            integrity: 'sha-384',
+            log: true,
+            imports: [
+                // Wanna expose react with import maps?
+                "react",
+                "react-dom",
+                // Expose a custom/local entry under a public specifier
+                {name: "react/jsx-runtime", entry: "./src/custom-jsx-runtime.ts"},
+                {name: "my-app-shared-lib", entry: "./src/my-app-shared-oib.ts"},
+            ],
+        }),
+    ],
 });
 ```
 
@@ -106,30 +110,39 @@ export default defineConfig({
 If you're considering [import maps](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap),
 you're likely building one of the following:
 
-- **Micro-frontend architecture** — A host app loads remote modules at runtime, and all parts need to share the same dependency instances (React, Solid, etc.)
+- **Micro-frontend architecture** — A host app loads remote modules at runtime, and all parts need to share the same
+  dependency instances (React, Solid, etc.)
 - **Plugin system** — Your app dynamically loads user-provided or third-party modules that rely on shared libraries
-- **Self-hosted dependency sharing** — You want to share dependencies across apps without relying on external CDN services like esm.sh or jspm.io
+- **Self-hosted dependency sharing** — You want to share dependencies across apps without relying on external CDN
+  services like esm.sh or jspm.io
 
 ### Why Not Third-Party Services?
 
 Services like [esm.sh](https://esm.sh) or [jspm.io](https://jspm.io) are convenient, but they come with trade-offs:
 
-- **External dependency** — Your app relies on a third-party service you don't control. If it goes down or changes, your app breaks.
-- **Network restrictions** — Many corporate environments, VPNs, and air-gapped networks block connections to public services. Your app simply won't work.
-- **Version alignment** — Ensuring host and remotes use the exact same dependency version from an external source can be error-prone.
+- **External dependency** — Your app relies on a third-party service you don't control. If it goes down or changes, your
+  app breaks.
+- **Network restrictions** — Many corporate environments, VPNs, and air-gapped networks block connections to public
+  services. Your app simply won't work.
+- **Version alignment** — Ensuring host and remotes use the exact same dependency version from an external source can be
+  error-prone.
 - **Limited flexibility** — You can't easily expose modified builds, subsets of exports, or local wrapper modules.
 
-With this plugin, **your host app becomes the source of truth**. Shared dependencies are built and served from your own infrastructure.
+With this plugin, **your host app becomes the source of truth**. Shared dependencies are built and served from your own
+infrastructure.
 
 ### Why This Plugin?
 
 **Works in both development and production**
 
-Most import map solutions only work at build time. This plugin keeps the import map in sync with Vite's dev server _and_ production builds. During development, it resolves to Vite's optimized deps; in production, it points to the correct hashed chunk filenames. No manual updates, no mismatches.
+Most import map solutions only work at build time. This plugin keeps the import map in sync with Vite's dev server _and_
+production builds. During development, it resolves to Vite's optimized deps; in production, it points to the correct
+hashed chunk filenames. No manual updates, no mismatches.
 
 **No build step required for remotes**
 
-Remote modules can be plain ESM files—no bundler, no plugins, no special conventions. They just `import "your-lib"` and the browser resolves it via the import map provided by the host.
+Remote modules can be plain ESM files—no bundler, no plugins, no special conventions. They just `import "your-lib"` and
+the browser resolves it via the import map provided by the host.
 
 **Single dependency instance**
 
@@ -137,7 +150,8 @@ Host and all remotes share the exact same module instances.
 
 **Full control over what you share**
 
-Expose npm packages as-is, or provide custom wrapper modules, modified builds, or local files. You decide exactly what each specifier resolves to.
+Expose npm packages as-is, or provide custom wrapper modules, modified builds, or local files. You decide exactly what
+each specifier resolves to.
 
 > **Note:** If a remote _does_ use a bundler, shared dependencies must be marked as **external**.
 > Otherwise the remote bundles its own copy and you lose the single-instance benefit.
@@ -148,20 +162,41 @@ Import maps are simple in concept, but keeping them in sync with your build is t
 - In production, chunks have content hashes in their filenames
 - Manually updating the import map every time something changes is error-prone
 
-This plugin handles all of that. You declare what to share, and it generates the correct import map for both dev and build—automatically.
+This plugin handles all of that. You declare what to share, and it generates the correct import map for both dev and
+build—automatically.
 
 **Example output:**
 
 ```html
+
 <script type="importmap">
-  {
-    "imports": {
-      "react": "/shared/react-DyndEn3u.js",
-      "react/jsx-runtime": "/shared/react_jsx-runtime-CAvv468t.js"
+    {
+      "imports": {
+        "react": "/shared/react-DyndEn3u.js",
+        "react/jsx-runtime": "/shared/react_jsx-runtime-CAvv468t.js"
+      }
     }
-  }
 </script>
 ```
+
+---
+
+## CommonJS Compatibility
+
+Import maps work best with browser-compatible ESM modules. CommonJS packages may appear to work in some setups, but they
+can still introduce inconsistencies because the compatibility layer is usually provided by the bundler, not by the
+browser import map itself.
+
+This library includes a minimal compatibility layer for CommonJS modules: it tries to inspect their exports with
+`cjs-module-lexer` and generate an automatic wrapper when possible. However, depending on how a package is authored or
+bundled, that heuristic may not always be able to reproduce the expected browser behavior.
+
+For that reason, when you need to share a CommonJS dependency, it is still recommended to create a small local ESM
+wrapper that re-exports only what you need. This keeps the interop fully delegated to the bundler during the build step
+and tends to be more predictable than mapping the CommonJS entry directly.
+Reference: [Expose Local Entry Points](#expose-local-entry-points-custom-esm-wrappers)
+
+In general, prefer libraries that provide first-class ESM support whenever possible.
 
 ---
 
@@ -171,14 +206,21 @@ This plugin handles all of that. You declare what to share, and it generates the
 
 Expose a local file that re-exports a dependency, giving you full control over what gets shared:
 
+> [!NOTE]
+> See [CommonJS Compatibility](#commonjs-compatibility) for the general compatibility notes.
+>
+> The React examples in [`examples/react-host-custom/src/react-esm.ts`](./examples/react-host-custom/src/react-esm.ts)
+> and [`examples/react-host-custom/src/react-jsx-runtime.ts`](./examples/react-host-custom/src/react-jsx-runtime.ts)
+> follow this pattern.
+
 ```ts
 viteImportMaps({
-  imports: [
-    { name: "react", entry: "./src/react-esm.ts" },
-    { name: "react/jsx-runtime", entry: "./src/react-jsx-runtime.ts" },
-    "react-dom",
-  ],
-  modulesOutDir: "shared",
+    imports: [
+        {name: "react", entry: "./src/react-esm.ts"},
+        {name: "react/jsx-runtime", entry: "./src/react-jsx-runtime.ts"},
+        "react-dom",
+    ],
+    modulesOutDir: "shared",
 });
 ```
 
@@ -190,16 +232,16 @@ Add SRI hashes to verify module integrity:
 
 ```ts
 viteImportMaps({
-  imports: ["react", "react-dom"],
-  integrity: "sha384", // applies to all
+    imports: ["react", "react-dom"],
+    integrity: "sha384", // applies to all
 });
 
 // Or per-dependency:
 viteImportMaps({
-  imports: [
-    { name: "react", entry: "react", integrity: "sha384" },
-    { name: "react-dom", entry: "react-dom", integrity: false },
-  ],
+    imports: [
+        {name: "react", entry: "react", integrity: "sha384"},
+        {name: "react-dom", entry: "react-dom", integrity: false},
+    ],
 });
 ```
 
@@ -212,28 +254,28 @@ If a remote module uses a bundler, configure shared dependencies as `external` t
 **tsdown example:**
 
 ```ts
-import { defineConfig } from "tsdown";
+import {defineConfig} from "tsdown";
 
 export default defineConfig({
-  external: ["react", "react-dom", "react/jsx-runtime"],
+    external: ["react", "react-dom", "react/jsx-runtime"],
 });
 ```
 
 **Vite (library mode) example:**
 
 ```ts
-import { defineConfig } from "vite";
+import {defineConfig} from "vite";
 
 export default defineConfig({
-  build: {
-    lib: {
-      entry: "./src/index.ts",
-      formats: ["es"],
+    build: {
+        lib: {
+            entry: "./src/index.ts",
+            formats: ["es"],
+        },
+        rolldownOptions: {
+            external: ["react", "react-dom", "react/jsx-runtime"],
+        },
     },
-    rolldownOptions: {
-      external: ["react", "react-dom", "react/jsx-runtime"],
-    },
-  },
 });
 ```
 
@@ -243,8 +285,8 @@ export default defineConfig({
 
 ```ts
 viteImportMaps({
-  imports: ["react"],
-  outputAsFile: true, // /import-map.json
+    imports: ["react"],
+    outputAsFile: true, // /import-map.json
 });
 ```
 
@@ -281,9 +323,12 @@ See the example: [`./examples/react-host-es-module-shims`](./examples/react-host
 
 ### Integrate with es-module-shims (dynamic import maps)
 
-You can integrate this plugin with **es-module-shims** in two common ways depending on how you want import maps applied at runtime:
+You can integrate this plugin with **es-module-shims** in two common ways depending on how you want import maps applied
+at runtime:
 
-- **Apply import maps dynamically at runtime** — If you prefer the plugin to emit a JSON file (use `outputAsFile: true`) or to use the `virtual:importmap` module, you can fetch or import the map and pass it to the es-module-shims runtime via the global `importShim` API (it exposes helpers like `addImportMap` and `import`).
+- **Apply import maps dynamically at runtime** — If you prefer the plugin to emit a JSON file (use `outputAsFile: true`)
+  or to use the `virtual:importmap` module, you can fetch or import the map and pass it to the es-module-shims runtime
+  via the global `importShim` API (it exposes helpers like `addImportMap` and `import`).
 
   ```ts
   import "es-module-shims";
@@ -314,9 +359,9 @@ You can integrate this plugin with **es-module-shims** in two common ways depend
 2. **In dev:** Resolves corresponding Vite dev-server URLs
 3. **In build:** Adds extra Rollup inputs so shared deps get dedicated output chunks, then records the final chunk URLs
 4. **Exposes** the mapping via:
-   - HTML injection (optional)
-   - `virtual:importmap` module (always)
-   - JSON file (optional)
+    - HTML injection (optional)
+    - `virtual:importmap` module (always)
+    - JSON file (optional)
 
 **Build snapshot:**
 
@@ -328,7 +373,7 @@ You can integrate this plugin with **es-module-shims** in two common ways depend
 ## Examples
 
 | Example                                                               | Description                              |
-| --------------------------------------------------------------------- | ---------------------------------------- |
+|-----------------------------------------------------------------------|------------------------------------------|
 | [`solidjs-host`](./examples/solidjs-host)                             | Solid.js host app                        |
 | [`solidjs-remote-counter`](./examples/solidjs-remote-counter)         | Solid.js remote module                   |
 | [`react-host-custom`](./examples/react-host-custom)                   | React host with custom ESM wrappers      |

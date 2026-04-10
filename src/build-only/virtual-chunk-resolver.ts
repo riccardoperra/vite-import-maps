@@ -1,4 +1,6 @@
 import path from "node:path/posix";
+import { styleText } from "node:util";
+import { createLogger } from "vite";
 import { pluginName } from "../config.js";
 import {
   buildCommonJsWrapperCode,
@@ -20,10 +22,15 @@ export function getVirtualFileName(name: string) {
 export function virtualChunksResolverPlugin(
   store: VitePluginImportMapsStore,
 ): Plugin {
+  const name = pluginName("build:virtual-chunks-loader");
+  const logger = createLogger(store.log ? "info" : "silent", {
+    prefix: name,
+  });
+
   return {
-    name: pluginName("build:virtual-chunks-loader"),
+    name,
     apply: "build",
-    resolveId(id) {
+    resolveId(this, id) {
       if (this.environment.name === "ssr") return;
       if (id.startsWith(VIRTUAL_ID_PREFIX)) {
         const normalizedId = id.slice(VIRTUAL_ID_PREFIX.length + 1);
@@ -51,7 +58,11 @@ export function virtualChunksResolverPlugin(
       ] as ImportMapBuildChunkEntrypoint;
 
       const resolvedId = await this.resolve(chunk.idToResolve);
+
       if (!resolvedId) {
+        logger.warn(`Could not resolve dependency for ${chunk.idToResolve}`, {
+          timestamp: true,
+        });
         return;
       }
 
@@ -69,20 +80,32 @@ export function virtualChunksResolverPlugin(
         // Fallback for Vite < 8 which still uses rollup/esbuild
         "commonjs" in moduleInfo.meta;
 
+      let code = `export * from "${chunk.originalDependencyName}"`;
+
       if (isCjs) {
         const commonJsNamedExports =
           await collectCommonJsNamedExports(fileName);
-        return {
-          moduleSideEffects: "no-treeshake",
-          code: buildCommonJsWrapperCode(
-            chunk.originalDependencyName,
-            fileName,
-            commonJsNamedExports,
-          ),
-        };
+
+        code = buildCommonJsWrapperCode(
+          chunk.originalDependencyName,
+          fileName,
+          commonJsNamedExports,
+        );
       }
 
-      const code = `export * from "${chunk.originalDependencyName}"`;
+      if (store.log) {
+        logger.info(`Resolve ${chunk.idToResolve}`, {
+          timestamp: true,
+        });
+        console.log(
+          `   ${styleText("cyanBright", "Path:")} %s`,
+          path.relative(process.cwd(), moduleInfo.id),
+        );
+        console.log(
+          `   ${styleText("cyanBright", "Format:")} %s`,
+          isCjs ? styleText("yellow", "cjs") : styleText("green", "esm"),
+        );
+      }
 
       return {
         moduleSideEffects: "no-treeshake",

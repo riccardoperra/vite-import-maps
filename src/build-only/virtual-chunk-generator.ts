@@ -1,5 +1,7 @@
-import * as path from "node:path/posix";
 import { createHash } from "node:crypto";
+import * as path from "node:path/posix";
+import { styleText } from "node:util";
+import { createLogger } from "vite";
 import { pluginName } from "../config.js";
 import {
   VIRTUAL_ID_PREFIX,
@@ -9,7 +11,7 @@ import type {
   ImportMapBuildChunkEntrypoint,
   VitePluginImportMapsStore,
 } from "../store.js";
-import type { Plugin, ResolvedConfig } from "vite";
+import type { Plugin } from "vite";
 
 export function virtualChunksGeneratorPlugin(
   store: VitePluginImportMapsStore,
@@ -17,15 +19,15 @@ export function virtualChunksGeneratorPlugin(
   const name = pluginName("build:virtual");
   const virtualModules = new Map<string, ImportMapBuildChunkEntrypoint>();
   const localModules = new Map<string, ImportMapBuildChunkEntrypoint>();
-  let config!: ResolvedConfig;
+  const logger = createLogger(undefined, {
+    prefix: name,
+  });
 
   return {
     name,
     apply: "build",
-    configResolved(resolvedConfig) {
-      config = resolvedConfig;
-    },
     buildStart() {
+      logger.info("Emit chunks for exposed dependencies", { timestamp: true });
       for (const input of store.inputs) {
         if (input.localFile) {
           // a local file doesn't have to be handled like a virtual
@@ -33,6 +35,13 @@ export function virtualChunksGeneratorPlugin(
           // need to be transformed
           const id = path.normalize(path.resolve(input.idToResolve));
           if (!localModules.has(id)) {
+            if (store.log) {
+              console.info(
+                `   ${styleText("cyanBright", `${input.normalizedDependencyName}:`)} %s`,
+                id,
+              );
+            }
+
             this.emitFile({
               type: "chunk",
               name: input.entrypoint,
@@ -44,6 +53,13 @@ export function virtualChunksGeneratorPlugin(
         } else {
           const id = getVirtualFileName(input.normalizedDependencyName);
           if (!virtualModules.has(id)) {
+            if (store.log) {
+              console.info(
+                `   ${styleText("cyanBright", `${input.normalizedDependencyName}`)} %s`,
+                id,
+              );
+            }
+
             this.emitFile({
               type: "chunk",
               name: input.entrypoint,
@@ -59,6 +75,9 @@ export function virtualChunksGeneratorPlugin(
     // to track the import-maps dependencies
     generateBundle(_, bundle) {
       store.clearDependencies();
+      logger.info("Collect dependencies and generate import map", {
+        timestamp: true,
+      });
 
       const keys = Object.keys(bundle);
       for (const key of keys) {
@@ -96,11 +115,16 @@ export function virtualChunksGeneratorPlugin(
           const url = `./${entry.fileName}`,
             packageName = entryImportMap.originalDependencyName;
           store.addDependency({ url, packageName, integrity });
-          store.log &&
-            config.logger.info(`[${name}] Added ${packageName}: ${url}`, {
-              timestamp: true,
-            });
         }
+      }
+
+      if (store.log) {
+        store.importMapDependencies.forEach((value, key) => {
+          console.info(
+            `   ${styleText("cyanBright", `${key}:`)} %s`,
+            value.url,
+          );
+        });
       }
     },
   };

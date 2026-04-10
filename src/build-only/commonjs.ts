@@ -1,7 +1,7 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path/posix";
 import { createRequire } from "node:module";
-import { platform } from "node:os";
-import { normalize, resolve as pathResolve } from "node:path";
-import { resolve } from "mlly";
+import { init, parse } from "cjs-module-lexer";
 
 export function isCommonJsFile(fileName: string): boolean {
   return (
@@ -12,18 +12,45 @@ export function isCommonJsFile(fileName: string): boolean {
   );
 }
 
-export async function collectCommonJsNamedExports(fileName: string) {
-  const url = await resolve(fileName, {
-    conditions: ["browser", "require", "import", "require", "default"],
-    url: import.meta.url,
-  });
+let cjsInit = false;
+export async function collectStaticCommonJsExports(
+  fileName: string,
+  seen = new Set<string>(),
+): Promise<Set<string>> {
   const require = createRequire(import.meta.url);
-  const mod = await require(
-    platform() === "win32"
-      ? normalize(url.replace("file:///", ""))
-      : url.replace("file://", ""),
-  );
-  return Object.keys(mod);
+  if (seen.has(fileName)) {
+    return new Set();
+  }
+  seen.add(fileName);
+  const source = await readFile(fileName, "utf8");
+  const { exports, reexports } = parse(source);
+  const names = new Set(exports);
+  for (let specifier of reexports) {
+    if (specifier.startsWith(".")) {
+      specifier = path.join(path.dirname(fileName), specifier);
+    }
+    try {
+      const resolved = require.resolve(specifier, {
+        paths: [fileName],
+      });
+      const nested = await collectStaticCommonJsExports(resolved, seen);
+      for (const name of nested) {
+        names.add(name);
+      }
+    } catch {}
+  }
+
+  return names;
+}
+
+export async function collectCommonJsNamedExports(fileName: string) {
+  if (!cjsInit) {
+    await init();
+    cjsInit = true;
+  }
+
+  const exports = await collectStaticCommonJsExports(fileName);
+  return [...exports];
 }
 
 export function isVite8CommonJsModule(
