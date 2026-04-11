@@ -1,5 +1,5 @@
 import * as path from "node:path/posix";
-import { normalizeDependencyName } from "./utils.js";
+import { isLocalEntry, normalizeDependencyName, normalizePath  } from "./utils.js";
 import type {
   DependencyIntegrityCheck,
   ImportMapSignature,
@@ -47,21 +47,22 @@ export class VitePluginImportMapsStore {
   }
 
   private normalizeDependencyInput = (
-    entry: SharedDependencyConfig[number],
+    config: SharedDependencyConfig[number],
   ): NormalizedDependencyInput => {
-    if (typeof entry === "string") {
+    if (typeof config === "string") {
       return {
-        name: entry,
-        entry: entry,
+        name: config,
+        entry: config,
         localFile: false,
         integrity: this.defaultIntegrity,
       };
     }
+    const { name, entry: url, integrity } = config;
     return {
-      name: entry.name,
-      entry: entry.entry,
-      localFile: entry.entry.startsWith("./") || entry.entry.startsWith("../"),
-      integrity: entry.integrity ?? this.defaultIntegrity,
+      name: name,
+      entry: normalizePath(url),
+      localFile: isLocalEntry(url),
+      integrity: integrity ?? this.defaultIntegrity,
     };
   };
 

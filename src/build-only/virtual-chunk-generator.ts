@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
 import * as path from "node:path/posix";
 import { styleText } from "node:util";
-import { createLogger } from "vite";
+import { createLogger, normalizePath } from "vite";
 import { pluginName } from "../config.js";
+import { isAbsolute } from "../utils.js";
 import {
   VIRTUAL_ID_PREFIX,
   getVirtualFileName,
@@ -33,7 +34,9 @@ export function virtualChunksGeneratorPlugin(
           // a local file doesn't have to be handled like a virtual
           // since I expect their source is already correct and doesn't
           // need to be transformed
-          const id = path.normalize(path.resolve(input.idToResolve));
+          const id = isAbsolute(input.idToResolve)
+            ? normalizePath(input.idToResolve)
+            : normalizePath(path.normalize(path.resolve(input.idToResolve)));
           if (!localModules.has(id)) {
             if (store.log) {
               console.info(
@@ -92,9 +95,9 @@ export function virtualChunksGeneratorPlugin(
         if (
           entry.facadeModuleId &&
           (entry.facadeModuleId.startsWith(VIRTUAL_ID_PREFIX) ||
-            path.isAbsolute(entry.facadeModuleId))
+            isAbsolute(entry.facadeModuleId))
         ) {
-          const facadeModuleId = path.normalize(entry.facadeModuleId);
+          const facadeModuleId = normalizePath(entry.facadeModuleId);
           const entryImportMap = handledModules.get(facadeModuleId);
           if (!entryImportMap) continue;
 
