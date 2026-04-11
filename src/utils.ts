@@ -1,5 +1,6 @@
-import * as path from "node:path/posix";
-import { normalizePath } from "vite";
+import * as path from "node:path";
+
+export const isWindows = process.platform === "win32";
 
 /**
  * Normalize a dependency name to be used as an entrypoint input
@@ -12,16 +13,6 @@ import { normalizePath } from "vite";
  */
 export function normalizeDependencyName(dep: string): string {
   return dep.replace(/\//g, "_");
-}
-
-export function getError(name: string, message: string): Error {
-  return new Error(
-    `[vite-plugin-import-maps${name ? ":" + name : ""}] ${message}`,
-  );
-}
-
-export function errorFactory(prefix: string): (message: string) => Error {
-  return (message) => getError(prefix, message);
 }
 
 /**
@@ -39,4 +30,21 @@ export function fileToUrl(file: string, root: string): string {
   }
   // file within root, create root-relative url
   return "/" + normalizePath(url);
+}
+
+export function isLocalEntry(url: string) {
+  return url.startsWith("./") || url.startsWith("../") || isAbsolute(url);
+}
+
+const windowsSlashRE = /\\/g;
+export function slash(p: string): string {
+  return p.replace(windowsSlashRE, "/");
+}
+
+export function isAbsolute(id: string) {
+  return path.posix.isAbsolute(id) || path.win32.isAbsolute(id);
+}
+
+export function normalizePath(id: string): string {
+  return path.posix.normalize(isWindows ? slash(id) : id);
 }

@@ -150,6 +150,36 @@ test("GH-18 imports commonjs classnames", async () => {
   expectImportMapMatchesOutputs(result, expectedImportMap);
 });
 
+// https://github.com/riccardoperra/vite-import-maps/issues/18
+test("GH-16 imports wasm", async () => {
+  const { buildOutput, result } = await buildFixture(
+    "./fixture/gh-16-with-shiki-onig-wasm/vite.config-test.js",
+  );
+
+  await expectSharedChunk({
+    result,
+    buildOutput,
+    name: "@import-maps/shiki-wasm-init",
+    fileName: "@import-maps/shiki-wasm-init.js",
+  });
+
+  await expectSharedChunk({
+    result,
+    buildOutput,
+    name: "@import-maps/shiki-wasm-url",
+    fileName: "@import-maps/shiki-wasm-url.js",
+  });
+
+  const expectedImportMap: ImportMap = {
+    imports: {
+      'shiki-wasm-init': './@import-maps/shiki-wasm-init.js',
+      'shiki-wasm-url': './@import-maps/shiki-wasm-url.js',
+    },
+  };
+
+  expectImportMapMatchesOutputs(result, expectedImportMap);
+});
+
 test("build react fixture with stable import map output", async () => {
   const { buildOutput, result } = await buildFixture(
     "./fixture/react-basic/vite.config-test.js",

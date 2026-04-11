@@ -11,7 +11,8 @@
     "allowSyntheticDefaultImports": true,
     "noEmit": true,
     "verbatimModuleSyntax": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "types": ["vite/client"]
   },
   "include": ["test"]
 }
