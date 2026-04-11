@@ -1,5 +1,12 @@
 # vite-import-maps-integration
 
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies [c206e3c]
+  - vite-import-maps@0.2.5
+
 ## 0.0.3
 
 ### Patch Changes

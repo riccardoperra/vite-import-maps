@@ -1,7 +1,7 @@
 {
   "name": "vite-import-maps-integration",
   "private": true,
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
   "scripts": {
     "test": "vitest --config ./vitest.config.ts",

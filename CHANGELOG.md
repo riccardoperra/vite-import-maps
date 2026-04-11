@@ -1,5 +1,11 @@
 # vite-import-maps
 
+## 0.2.5
+
+### Patch Changes
+
+- c206e3c: fix: support local entries referenced by absolute paths
+
 ## 0.2.4
 
 ### Patch Changes
