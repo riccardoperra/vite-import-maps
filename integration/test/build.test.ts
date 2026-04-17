@@ -1,6 +1,7 @@
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { afterEach, expect, test, vi } from "vitest";
+import crypto from "node:crypto";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   buildFixture,
   expectImportMapMatchesOutputs,
@@ -8,210 +9,211 @@ import {
 } from "./build.test-utils.js";
 import type { ImportMap } from "./build.test-utils.js";
 
-const cryptoMockState = vi.hoisted(() => ({
-  digest: undefined as string | undefined,
-}));
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
-vi.mock(import("node:crypto"), async (importOriginal) => {
-  const original = await importOriginal();
+describe.each([
+  ["vite8", 8],
+  ["vite7", 7],
+  ["vite6", 6],
+] as const)("%s", (_, version) => {
+  test("build project with right import map", async () => {
+    const { buildOutput, result } = await buildFixture(
+      "./fixture/basic/vite.config-test.js",
+      version,
+    );
+    const sharedDependency = await expectSharedChunk({
+      result,
+      buildOutput,
+      name: "@import-maps/shared-lib",
+      fileName: "@import-maps/shared-lib.js",
+    });
 
-  return {
-    ...original,
-    createHash: vi.fn((algorithm: string) => {
-      if (!cryptoMockState.digest) {
-        return original.createHash(algorithm);
-      }
+    const expectedImportMap: ImportMap = {
+      imports: {
+        "shared-lib": `./${sharedDependency.fileName}`,
+      },
+    };
 
-      const hash = {
-        update: vi.fn(() => hash),
-        digest: vi.fn(() => cryptoMockState.digest),
+    expectImportMapMatchesOutputs(result, expectedImportMap);
+  });
+
+  test("include integrity in import maps when enabled", async () => {
+    const { buildOutput, result } = await buildFixture(
+      "./fixture/with-integrity/vite.config-test.js",
+      version,
+    );
+    const sharedDependency = await expectSharedChunk({
+      result,
+      buildOutput,
+      name: "@import-maps/shared-lib",
+      fileName: "@import-maps/shared-lib.js",
+    });
+    const expectedIntegrity = `sha384-${crypto
+      .createHash("sha384")
+      .update(sharedDependency.code)
+      .digest("base64")}`;
+
+    const expectedImportMap: ImportMap = {
+      imports: {
+        "shared-lib": `./${sharedDependency.fileName}`,
+      },
+      integrity: {
+        [`./${sharedDependency.fileName}`]: expectedIntegrity,
+      },
+    };
+
+    expectImportMapMatchesOutputs(result, expectedImportMap);
+  });
+
+  test.skipIf(version < 8)(
+    "preserve default exports for commonjs shared dependencies",
+    async () => {
+      const { buildOutput, result } = await buildFixture(
+        "./fixture/with-commonjs-default/vite.config-test.js",
+        version,
+      );
+      const sharedDependency = await expectSharedChunk({
+        result,
+        buildOutput,
+        name: "@import-maps/shared-lib",
+        fileName: "@import-maps/shared-lib.js",
+      });
+
+      const builtChunk = await import(
+        pathToFileURL(path.join(buildOutput, sharedDependency.fileName)).href
+      );
+
+      expect(builtChunk.default("World")).toEqual("Hello World");
+      expect(builtChunk.foo("World")).toEqual("Hello World");
+
+      const expectedImportMap: ImportMap = {
+        imports: {
+          "shared-lib": `./${sharedDependency.fileName}`,
+        },
       };
 
-      return hash as unknown as ReturnType<typeof original.createHash>;
-    }),
-  };
-});
-
-afterEach(() => {
-  cryptoMockState.digest = undefined;
-  vi.clearAllMocks();
-});
-
-test("build project with right import map", async () => {
-  const { buildOutput, result } = await buildFixture(
-    "./fixture/basic/vite.config-test.js",
-  );
-  const sharedDependency = await expectSharedChunk({
-    result,
-    buildOutput,
-    name: "@import-maps/shared-lib",
-    fileName: "@import-maps/shared-lib.js",
-  });
-
-  const expectedImportMap: ImportMap = {
-    imports: {
-      "shared-lib": `./${sharedDependency.fileName}`,
+      expectImportMapMatchesOutputs(result, expectedImportMap);
     },
-  };
-
-  expectImportMapMatchesOutputs(result, expectedImportMap);
-});
-
-test("include integrity in import maps when enabled", async () => {
-  cryptoMockState.digest = "abc123";
-  const { buildOutput, result } = await buildFixture(
-    "./fixture/with-integrity/vite.config-test.js",
-  );
-  const sharedDependency = await expectSharedChunk({
-    result,
-    buildOutput,
-    name: "@import-maps/shared-lib",
-    fileName: "@import-maps/shared-lib.js",
-  });
-
-  const expectedImportMap: ImportMap = {
-    imports: {
-      "shared-lib": `./${sharedDependency.fileName}`,
-    },
-    integrity: {
-      [`./${sharedDependency.fileName}`]: "sha384-abc123",
-    },
-  };
-
-  expectImportMapMatchesOutputs(result, expectedImportMap);
-});
-
-test("preserve default exports for commonjs shared dependencies", async () => {
-  const { buildOutput, result } = await buildFixture(
-    "./fixture/with-commonjs-default/vite.config-test.js",
-  );
-  const sharedDependency = await expectSharedChunk({
-    result,
-    buildOutput,
-    name: "@import-maps/shared-lib",
-    fileName: "@import-maps/shared-lib.js",
-  });
-
-  const builtChunk = await import(
-    pathToFileURL(path.join(buildOutput, sharedDependency.fileName)).href
   );
 
-  expect(builtChunk.default("World")).toEqual("Hello World");
-  expect(builtChunk.foo("World")).toEqual("Hello World");
+  test("imports commonjs modules that uses browser globals", async () => {
+    const { buildOutput, result } = await buildFixture(
+      "./fixture/with-cjs-that-use-browser-globals/vite.config-test.js",
+      version,
+    );
+    const sharedDependency = await expectSharedChunk({
+      result,
+      buildOutput,
+      name: "@import-maps/shared-lib",
+      fileName: "@import-maps/shared-lib.js",
+    });
 
-  const expectedImportMap: ImportMap = {
-    imports: {
-      "shared-lib": `./${sharedDependency.fileName}`,
-    },
-  };
+    const expectedImportMap: ImportMap = {
+      imports: {
+        "shared-lib": `./${sharedDependency.fileName}`,
+      },
+    };
 
-  expectImportMapMatchesOutputs(result, expectedImportMap);
-});
-
-test("imports commonjs modules that uses browser globals", async () => {
-  const { buildOutput, result } = await buildFixture(
-    "./fixture/with-cjs-that-use-browser-globals/vite.config-test.js",
-  );
-  const sharedDependency = await expectSharedChunk({
-    result,
-    buildOutput,
-    name: "@import-maps/shared-lib",
-    fileName: "@import-maps/shared-lib.js",
+    expectImportMapMatchesOutputs(result, expectedImportMap);
   });
 
-  const expectedImportMap: ImportMap = {
-    imports: {
-      "shared-lib": `./${sharedDependency.fileName}`,
-    },
-  };
+  // https://github.com/riccardoperra/vite-import-maps/issues/18
+  test("GH-18 imports commonjs classnames", async () => {
+    const { buildOutput, result } = await buildFixture(
+      "./fixture/with-cjs-classnames/vite.config-test.js",
+      version,
+    );
 
-  expectImportMapMatchesOutputs(result, expectedImportMap);
-});
+    await expectSharedChunk({
+      result,
+      buildOutput,
+      name: "@import-maps/classnames",
+      fileName: "@import-maps/classnames.js",
+    });
 
-// https://github.com/riccardoperra/vite-import-maps/issues/18
-test("GH-18 imports commonjs classnames", async () => {
-  const { buildOutput, result } = await buildFixture(
-    "./fixture/with-cjs-classnames/vite.config-test.js",
-  );
+    const expectedImportMap: ImportMap = {
+      imports: {
+        classnames: `./@import-maps/classnames.js`,
+      },
+    };
 
-  await expectSharedChunk({
-    result,
-    buildOutput,
-    name: "@import-maps/classnames",
-    fileName: "@import-maps/classnames.js",
+    expectImportMapMatchesOutputs(result, expectedImportMap);
   });
 
-  const expectedImportMap: ImportMap = {
-    imports: {
-      classnames: `./@import-maps/classnames.js`,
-    },
-  };
+  // https://github.com/riccardoperra/vite-import-maps/issues/18
+  test("GH-16 imports wasm", async () => {
+    const { buildOutput, result } = await buildFixture(
+      "./fixture/gh-16-with-shiki-onig-wasm/vite.config-test.js",
+      version,
+    );
 
-  expectImportMapMatchesOutputs(result, expectedImportMap);
-});
+    await expectSharedChunk({
+      result,
+      buildOutput,
+      name: "@import-maps/shiki-wasm-init",
+      fileName: "@import-maps/shiki-wasm-init.js",
+    });
 
-// https://github.com/riccardoperra/vite-import-maps/issues/18
-test("GH-16 imports wasm", async () => {
-  const { buildOutput, result } = await buildFixture(
-    "./fixture/gh-16-with-shiki-onig-wasm/vite.config-test.js",
-  );
+    await expectSharedChunk({
+      result,
+      buildOutput,
+      name: "@import-maps/shiki-wasm-url",
+      fileName: "@import-maps/shiki-wasm-url.js",
+    });
 
-  await expectSharedChunk({
-    result,
-    buildOutput,
-    name: "@import-maps/shiki-wasm-init",
-    fileName: "@import-maps/shiki-wasm-init.js",
+    const expectedImportMap: ImportMap = {
+      imports: {
+        "shiki-wasm-init": "./@import-maps/shiki-wasm-init.js",
+        "shiki-wasm-url": "./@import-maps/shiki-wasm-url.js",
+      },
+    };
+
+    expectImportMapMatchesOutputs(result, expectedImportMap);
   });
 
-  await expectSharedChunk({
-    result,
-    buildOutput,
-    name: "@import-maps/shiki-wasm-url",
-    fileName: "@import-maps/shiki-wasm-url.js",
-  });
+  test("build react fixture with stable import map output", async () => {
+    const { buildOutput, result } = await buildFixture(
+      "./fixture/react-basic/vite.config-test.js",
+      version,
+    );
+    const sharedReactChunk = await expectSharedChunk({
+      result,
+      buildOutput,
+      name: "@import-maps/react",
+      fileName: "@import-maps/react.js",
+    });
+    const sharedReactDomChunk = await expectSharedChunk({
+      result,
+      buildOutput,
+      name: "@import-maps/react-dom",
+      fileName: "@import-maps/react-dom.js",
+    });
+    const sharedReactJsxRuntimeChunk = await expectSharedChunk({
+      result,
+      buildOutput,
+      name: "@import-maps/react_jsx-runtime",
+      fileName: "@import-maps/react_jsx-runtime.js",
+    });
+    const sharedReactI18NextChunk = await expectSharedChunk({
+      result,
+      buildOutput,
+      name: "@import-maps/react-i18next",
+      fileName: "@import-maps/react-i18next.js",
+    });
 
-  const expectedImportMap: ImportMap = {
-    imports: {
-      'shiki-wasm-init': './@import-maps/shiki-wasm-init.js',
-      'shiki-wasm-url': './@import-maps/shiki-wasm-url.js',
-    },
-  };
+    const expectedImportMap: ImportMap = {
+      imports: {
+        "react-dom": `./${sharedReactDomChunk.fileName}`,
+        react: `./${sharedReactChunk.fileName}`,
+        "react/jsx-runtime": `./${sharedReactJsxRuntimeChunk.fileName}`,
+        "react-i18next": `./${sharedReactI18NextChunk.fileName}`,
+      },
+    };
 
-  expectImportMapMatchesOutputs(result, expectedImportMap);
-});
-
-test("build react fixture with stable import map output", async () => {
-  const { buildOutput, result } = await buildFixture(
-    "./fixture/react-basic/vite.config-test.js",
-  );
-  const sharedReactChunk = await expectSharedChunk({
-    result,
-    buildOutput,
-    name: "@import-maps/react",
-    fileName: "@import-maps/react.js",
-  });
-  const sharedReactDomChunk = await expectSharedChunk({
-    result,
-    buildOutput,
-    name: "@import-maps/react-dom",
-    fileName: "@import-maps/react-dom.js",
-  });
-  const sharedReactJsxRuntimeChunk = await expectSharedChunk({
-    result,
-    buildOutput,
-    name: "@import-maps/react_jsx-runtime",
-    fileName: "@import-maps/react_jsx-runtime.js",
-  });
-
-  const expectedImportMap: ImportMap = {
-    imports: {
-      "react-dom": `./${sharedReactDomChunk.fileName}`,
-      react: `./${sharedReactChunk.fileName}`,
-      "react/jsx-runtime": `./${sharedReactJsxRuntimeChunk.fileName}`,
-    },
-  };
-
-  expectImportMapMatchesOutputs(result, expectedImportMap, {
-    importMapAssetFileName: "import-map.json",
+    expectImportMapMatchesOutputs(result, expectedImportMap, {
+      importMapAssetFileName: "import-map.json",
+    });
   });
 });

@@ -21,13 +21,13 @@ export default defineConfig({
       output: {
         chunkFileNames: "[name].js",
         entryFileNames: "[name].js",
-      }
+      },
     },
   },
   plugins: [
     react(),
     viteImportMaps({
-      imports: ["react", "react-dom", "react/jsx-runtime"],
+      imports: ["react", "react-dom", "react/jsx-runtime", "react-i18next"],
       modulesOutDir: "@import-maps",
       outputAsFile: true,
     }),

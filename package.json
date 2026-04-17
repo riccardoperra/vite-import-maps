@@ -21,6 +21,7 @@
     "test": "pnpm --filter vite-import-maps-integration test",
     "build": "tsdown",
     "format": "prettier --write .",
+    "publint": "pnpm dlx publint",
     "ci:publish": "changeset publish",
     "ci:version": "changeset version"
   },
@@ -33,7 +34,10 @@
     "microfrontend",
     "plugin"
   ],
-  "repository": "https://github.com/riccardoperra/vite-import-maps",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/riccardoperra/vite-import-maps.git"
+  },
   "homepage": "https://github.com/riccardoperra/vite-import-maps",
   "author": {
     "name": "Riccardo Perra",
