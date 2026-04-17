@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 import * as path from "node:path/posix";
 import { styleText } from "node:util";
-import { createLogger, normalizePath } from "vite";
+import { createLogger } from "vite";
 import { pluginName } from "../config.js";
-import { isAbsolute } from "../utils.js";
+import { isAbsolute, normalizePath } from "../utils.js";
 import {
   VIRTUAL_ID_PREFIX,
   getVirtualFileName,

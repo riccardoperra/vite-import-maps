@@ -78,7 +78,8 @@ export function virtualChunksResolverPlugin(
       const isCjs =
         isVite8CommonJsModule(moduleInfo.inputFormat, fileName) ||
         // Fallback for Vite < 8 which still uses rollup/esbuild
-        "commonjs" in moduleInfo.meta;
+        ("commonjs" in moduleInfo.meta &&
+          moduleInfo.meta.commonjs.isCommonJS !== false);
 
       let code = `export * from "${chunk.originalDependencyName}"`;
 
