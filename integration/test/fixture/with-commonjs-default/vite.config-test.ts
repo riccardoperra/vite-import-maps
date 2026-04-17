@@ -17,6 +17,7 @@ export default {
     },
   },
   build: {
+    emptyOutDir: true,
     outDir: buildOutput,
     minify: false,
     rolldownOptions: {

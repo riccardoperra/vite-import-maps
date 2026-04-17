@@ -4,7 +4,8 @@ export default defineConfig({
   entry: ["./src/index.ts"],
   platform: "node",
   format: "esm",
-  dts: {
-    isolatedDeclarations: true,
-  },
+  dts: true,
+  deps: {
+    neverBundle: ['cjs-module-lexer'],
+  }
 });

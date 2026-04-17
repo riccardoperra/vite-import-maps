@@ -6,5 +6,4 @@ export default defineConfig({
     dir: "./test",
     environment: "node",
   },
-  plugins: [],
 });

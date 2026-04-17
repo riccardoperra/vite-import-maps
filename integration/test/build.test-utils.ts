@@ -1,6 +1,7 @@
 import path from "node:path";
 import { expect } from "vitest";
-import { build } from "vite";
+import { createJiti } from "jiti";
+import type { UserConfig } from "vite";
 import type { OutputAsset, OutputChunk, RolldownOutput } from "rolldown";
 
 export interface ImportMap {
@@ -61,19 +62,77 @@ export function findAssetByFileName(
       output.type === "asset" && output.fileName === fileName,
   );
 
-  expect(asset, `Expected emitted asset \`${fileName}\` to exist`).toBeDefined();
+  expect(
+    asset,
+    `Expected emitted asset \`${fileName}\` to exist`,
+  ).toBeDefined();
 
   return asset!;
 }
 
-export async function buildFixture(configPath: string): Promise<BuiltFixture> {
-  const { default: config } = await import(configPath);
+type SupportedViteVersion = 6 | 7 | 8;
+
+export async function getViteBuildTool(version: SupportedViteVersion) {
+  const map = {
+    [6]: import("vite@6"),
+    [7]: import("vite@7"),
+    [8]: import("vite@8"),
+  };
+  const vite = await map[version];
+  return vite.build;
+}
+
+const jiti = createJiti(import.meta.url, {
+  moduleCache: false,
+  fsCache: false,
+  debug: true,
+});
+
+export async function buildFixture(
+  configPath: string,
+  version: 6 | 7 | 8,
+): Promise<BuiltFixture> {
+  const configUrl = new URL(configPath, import.meta.url);
+  // Load fixture config as a fresh module to avoid sharing plugin state
+  // between Vite 7 and Vite 8 runs in the same test process.
+  configUrl.searchParams.set(
+    "fixture",
+    `${version}-${Date.now()}-${Math.random()}`,
+  );
+
+  const { default: config } = await jiti.import<{ default: UserConfig }>(
+    configUrl.href,
+  );
 
   expect(config.build?.outDir).toBeDefined();
 
+  const build = await getViteBuildTool(version);
+
+  // @ts-expect-error Type collision
+  const { rolldownOptions, outDir, ...configDotBuild } = config.build;
+  const versionedOutDir = path.join(outDir, `vite${version}`);
+
+  const viteBuildConfig = {
+    ...config,
+    build: {
+      emitAssets: true,
+      emptyOutDir: true,
+      ...configDotBuild,
+      ...(version < 8
+        ? { rollupOptions: rolldownOptions }
+        : {
+            rolldownOptions,
+          }),
+      outDir: versionedOutDir,
+    },
+  } satisfies UserConfig;
+
+  // @ts-expect-error Type collision
+  const output = await build(viteBuildConfig);
+
   return {
-    buildOutput: config.build.outDir,
-    result: (await build(config)) as RolldownOutput,
+    buildOutput: versionedOutDir,
+    result: output as RolldownOutput,
   };
 }
 
@@ -83,7 +142,10 @@ export function parseImportMapFromHtml(indexHtml: OutputAsset): ImportMap {
     /<script type="importmap">([\s\S]*?)<\/script>/,
   );
 
-  expect(scriptMatch, "Expected HTML to include an import map script").toBeTruthy();
+  expect(
+    scriptMatch,
+    "Expected HTML to include an import map script",
+  ).toBeTruthy();
 
   return JSON.parse(scriptMatch![1]) as ImportMap;
 }
