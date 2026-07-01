@@ -119,6 +119,27 @@ describe.each([
     expectImportMapMatchesOutputs(result, expectedImportMap);
   });
 
+  test("build scoped aliases that resolve to local files", async () => {
+    const { buildOutput, result } = await buildFixture(
+      "./fixture/with-scoped-alias/vite.config-test.js",
+      version,
+    );
+    const sharedDependency = await expectSharedChunk({
+      result,
+      buildOutput,
+      name: "@import-maps/@acme_app",
+      fileName: "@import-maps/@acme_app.js",
+    });
+
+    const expectedImportMap: ImportMap = {
+      imports: {
+        "@acme/app": `./${sharedDependency.fileName}`,
+      },
+    };
+
+    expectImportMapMatchesOutputs(result, expectedImportMap);
+  });
+
   // https://github.com/riccardoperra/vite-import-maps/issues/18
   test("GH-18 imports commonjs classnames", async () => {
     const { buildOutput, result } = await buildFixture(

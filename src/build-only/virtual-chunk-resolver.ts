@@ -2,6 +2,7 @@ import path from "node:path/posix";
 import { styleText } from "node:util";
 import { createLogger } from "vite";
 import { pluginName } from "../config.js";
+import { normalizePath } from "../utils.js";
 import {
   buildCommonJsWrapperCode,
   collectCommonJsNamedExports,
@@ -19,6 +20,24 @@ export function getVirtualFileName(name: string) {
   return `${VIRTUAL_ID_PREFIX}/${name}`;
 }
 
+function getNormalizedVirtualModuleName(id: string): string {
+  return id.slice(VIRTUAL_ID_PREFIX.length + 1).split("?", 1)[0]!;
+}
+
+function getVirtualChunkInput(
+  store: VitePluginImportMapsStore,
+  id: string,
+): ImportMapBuildChunkEntrypoint | undefined {
+  if (!id.startsWith(VIRTUAL_ID_PREFIX)) {
+    return;
+  }
+
+  const normalizedId = getNormalizedVirtualModuleName(id);
+  return store.inputs.find(
+    (input) => input.normalizedDependencyName === normalizedId,
+  );
+}
+
 export function virtualChunksResolverPlugin(
   store: VitePluginImportMapsStore,
 ): Plugin {
@@ -26,20 +45,26 @@ export function virtualChunksResolverPlugin(
   const logger = createLogger(store.log ? "info" : "silent", {
     prefix: name,
   });
+  let root = "";
 
   return {
     name,
     apply: "build",
+    configResolved(config) {
+      root = config.root;
+    },
     resolveId(this, id) {
       if (this.environment.name === "ssr") return;
       if (id.startsWith(VIRTUAL_ID_PREFIX)) {
-        const normalizedId = id.slice(VIRTUAL_ID_PREFIX.length + 1);
+        const chunk = getVirtualChunkInput(store, id);
+        if (!chunk) {
+          return;
+        }
+
         return {
           id,
           meta: {
-            info: store.inputs.find(
-              (input) => input.normalizedDependencyName === normalizedId,
-            ),
+            info: chunk,
           },
         };
       }
@@ -50,14 +75,23 @@ export function virtualChunksResolverPlugin(
         return;
       }
       const virtualModuleInfo = this.getModuleInfo(id);
-      if (!virtualModuleInfo) {
+      const chunk =
+        (virtualModuleInfo?.meta["info"] as
+          | ImportMapBuildChunkEntrypoint
+          | undefined) ?? getVirtualChunkInput(store, id);
+
+      if (!chunk) {
         return;
       }
-      const chunk: ImportMapBuildChunkEntrypoint = virtualModuleInfo.meta[
-        "info"
-      ] as ImportMapBuildChunkEntrypoint;
 
-      const resolvedId = await this.resolve(chunk.idToResolve);
+      const fallbackImporter = root
+        ? normalizePath(`${root}/index.html`)
+        : undefined;
+      const resolvedId =
+        (await this.resolve(chunk.idToResolve)) ??
+        (fallbackImporter
+          ? await this.resolve(chunk.idToResolve, fallbackImporter)
+          : undefined);
 
       if (!resolvedId) {
         logger.warn(`Could not resolve dependency for ${chunk.idToResolve}`, {

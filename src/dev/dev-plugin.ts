@@ -1,5 +1,5 @@
 import { pluginName } from "../config.js";
-import { fileToUrl } from "../utils.js";
+import { fileToUrl, normalizePath } from "../utils.js";
 import type { Plugin } from "vite";
 import type { VitePluginImportMapsStore } from "../store.js";
 
@@ -37,12 +37,13 @@ export function pluginImportMapsDevelopmentEnv(
       if (devOptimizer.metadata.browserHash === latestBrowserHash) {
         resolvedModules = cachedResolvedModules;
       } else {
+        const importer = normalizePath(`${config.root}/index.html`);
         resolvedModules = (
           await Promise.all(
             store.sharedDependencies.map(async (dependency) => {
-              const resolvedId = await pluginContainer.resolveId(
-                dependency.entry,
-              );
+              const resolvedId =
+                (await pluginContainer.resolveId(dependency.entry)) ??
+                (await pluginContainer.resolveId(dependency.entry, importer));
               if (!resolvedId) return null;
 
               const path = fileToUrl(resolvedId.id, config.root);
