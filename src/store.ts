@@ -1,5 +1,9 @@
 import * as path from "node:path/posix";
-import { isLocalEntry, normalizeDependencyName, normalizePath  } from "./utils.js";
+import {
+  isLocalEntry,
+  normalizeDependencyName,
+  normalizePath,
+} from "./utils.js";
 import type {
   DependencyIntegrityCheck,
   ImportMapSignature,
@@ -84,7 +88,26 @@ export class VitePluginImportMapsStore {
 
   addInput(input: NormalizedDependencyInput): ImportMapBuildChunkEntrypoint {
     const dependency = input.name;
-    const normalizedDepName = this.getNormalizedDependencyName(dependency);
+    if (
+      this.inputs.some(
+        (registered) => registered.originalDependencyName === dependency,
+      )
+    ) {
+      throw new Error(`Duplicate import-map dependency: ${dependency}`);
+    }
+
+    const normalizedName = this.getNormalizedDependencyName(dependency);
+    let normalizedDepName = normalizedName;
+    let suffix = 1;
+    while (
+      this.inputs.some(
+        (registered) =>
+          registered.normalizedDependencyName === normalizedDepName,
+      )
+    ) {
+      normalizedDepName = `${normalizedName}_${suffix++}`;
+    }
+
     const entrypoint = this.getEntrypointPath(normalizedDepName);
 
     const meta = {

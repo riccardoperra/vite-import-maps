@@ -4,7 +4,9 @@ export function foo() {
 
 export const bar = "bar";
 
-export default {
+const sharedLib = {
   foo,
   bar,
 };
+
+export default sharedLib;

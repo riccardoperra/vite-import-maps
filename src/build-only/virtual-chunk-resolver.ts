@@ -81,7 +81,12 @@ export function virtualChunksResolverPlugin(
         ("commonjs" in moduleInfo.meta &&
           moduleInfo.meta.commonjs.isCommonJS !== false);
 
-      let code = `export * from "${chunk.originalDependencyName}"`;
+      const dependencyName = JSON.stringify(chunk.originalDependencyName);
+      let code = `export * from ${dependencyName};`;
+
+      if (moduleInfo.exports.includes("default")) {
+        code += `\nexport { default } from ${dependencyName};`;
+      }
 
       if (isCjs) {
         const commonJsNamedExports =

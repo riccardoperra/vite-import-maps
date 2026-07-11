@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import * as path from "node:path/posix";
+import * as path from "node:path";
 import { styleText } from "node:util";
 import { createLogger } from "vite";
 import { pluginName } from "../config.js";
@@ -23,10 +23,14 @@ export function virtualChunksGeneratorPlugin(
   const logger = createLogger(undefined, {
     prefix: name,
   });
+  let root = process.cwd();
 
   return {
     name,
     apply: "build",
+    configResolved(config) {
+      root = config.root;
+    },
     buildStart() {
       logger.info("Emit chunks for exposed dependencies", { timestamp: true });
       for (const input of store.inputs) {
@@ -36,7 +40,7 @@ export function virtualChunksGeneratorPlugin(
           // need to be transformed
           const id = isAbsolute(input.idToResolve)
             ? normalizePath(input.idToResolve)
-            : normalizePath(path.normalize(path.resolve(input.idToResolve)));
+            : normalizePath(path.resolve(root, input.idToResolve));
           if (!localModules.has(id)) {
             if (store.log) {
               console.info(
