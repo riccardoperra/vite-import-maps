@@ -30,9 +30,36 @@ describe.each([
       fileName: "@import-maps/shared-lib.js",
     });
 
+    const builtChunk = await import(
+      pathToFileURL(path.join(buildOutput, sharedDependency.fileName)).href
+    );
+    expect(builtChunk.default.foo()).toEqual("test");
+    expect(builtChunk.bar).toEqual("bar");
+
     const expectedImportMap: ImportMap = {
       imports: {
         "shared-lib": `./${sharedDependency.fileName}`,
+      },
+    };
+
+    expectImportMapMatchesOutputs(result, expectedImportMap);
+  });
+
+  test("resolve local entries relative to the Vite root", async () => {
+    const { buildOutput, result } = await buildFixture(
+      "./fixture/local-entry/vite.config-test.js",
+      version,
+    );
+    const sharedDependency = await expectSharedChunk({
+      result,
+      buildOutput,
+      name: "@import-maps/local-shared-lib",
+      fileName: "@import-maps/local-shared-lib.js",
+    });
+
+    const expectedImportMap: ImportMap = {
+      imports: {
+        "local-shared-lib": `./${sharedDependency.fileName}`,
       },
     };
 

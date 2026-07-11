@@ -3,5 +3,9 @@ function foo() {
 	return "test";
 }
 var bar = "bar";
+var sharedLib = {
+	foo,
+	bar: "bar"
+};
 //#endregion
-export { bar, foo };
+export { bar, sharedLib as default, foo };

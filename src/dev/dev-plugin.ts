@@ -14,6 +14,7 @@ export function pluginImportMapsDevelopmentEnv(
   const name = pluginName("development");
   let latestBrowserHash: string | undefined = undefined;
   let cachedResolvedModules: Array<DevResolvedModule> = [];
+  let optimizerWarningLogged = false;
 
   return {
     name,
@@ -23,18 +24,26 @@ export function pluginImportMapsDevelopmentEnv(
     // Here we will not inject any import map script, but we will track the dependencies into the store
     async transformIndexHtml(_, { server }) {
       if (!server) return;
-      const loggingContext = store.log ? this : undefined;
       const { pluginContainer, config } = server,
         // This is just an improvement to avoid unnecessary calls to the pluginContainer
         // We get the depsOptimizer config to retrieve the latest browser hash.
         // Inside depsOptimizer we also have the dependencies with their own path,
         // but it's preferred to resolve those urls via pluginContainer.
         clientEnvironment = server.environments["client"],
-        devOptimizer = clientEnvironment.depsOptimizer!;
+        devOptimizer = clientEnvironment.depsOptimizer;
+
+      if (!devOptimizer && !optimizerWarningLogged) {
+        config.logger.warn(
+          `[${name}] Vite dependency optimizer is unavailable; import-map entries will be resolved on every HTML transformation.`,
+        );
+        optimizerWarningLogged = true;
+      }
+
+      const browserHash = devOptimizer?.metadata.browserHash;
 
       let resolvedModules: Array<DevResolvedModule>;
 
-      if (devOptimizer.metadata.browserHash === latestBrowserHash) {
+      if (browserHash && browserHash === latestBrowserHash) {
         resolvedModules = cachedResolvedModules;
       } else {
         resolvedModules = (
@@ -57,8 +66,9 @@ export function pluginImportMapsDevelopmentEnv(
       }
 
       cachedResolvedModules = resolvedModules;
-      latestBrowserHash = devOptimizer.metadata.browserHash;
+      latestBrowserHash = browserHash;
 
+      store.clearDependencies();
       for (const { path: url, name: packageName } of resolvedModules) {
         store.addDependency({ packageName, url });
       }
