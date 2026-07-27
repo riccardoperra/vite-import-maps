@@ -1,10 +1,12 @@
-import { virtualChunksGeneratorPlugin } from "./virtual-chunk-generator.js";
+import { virtualChunksGeneratorPlugins } from "./virtual-chunk-generator.js";
 import { virtualChunksResolverPlugin } from "./virtual-chunk-resolver.js";
+import type { ImportMapBuildOutput } from "./import-map-build-output.js";
 import type { Plugin } from "vite";
 import type { VitePluginImportMapsStore } from "../store.js";
 
 export function pluginImportMapsBuildEnv(
   store: VitePluginImportMapsStore,
+  buildOutput: ImportMapBuildOutput,
 ): Array<Plugin> {
   const plugins: Array<Plugin> = [];
 
@@ -12,7 +14,7 @@ export function pluginImportMapsBuildEnv(
     store.addInput(dep);
   }
 
-  plugins.push(virtualChunksGeneratorPlugin(store));
+  plugins.push(...virtualChunksGeneratorPlugins(store, buildOutput));
   plugins.push(virtualChunksResolverPlugin(store));
 
   return plugins;

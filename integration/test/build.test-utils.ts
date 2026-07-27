@@ -14,6 +14,10 @@ interface BuiltFixture {
   result: RolldownOutput;
 }
 
+interface BuildFixtureOptions {
+  write?: boolean;
+}
+
 interface SharedChunkAssertionOptions {
   result: RolldownOutput;
   buildOutput: string;
@@ -91,6 +95,7 @@ const jiti = createJiti(import.meta.url, {
 export async function buildFixture(
   configPath: string,
   version: 6 | 7 | 8,
+  options: BuildFixtureOptions = {},
 ): Promise<BuiltFixture> {
   const configUrl = new URL(configPath, import.meta.url);
   // Load fixture config as a fresh module to avoid sharing plugin state
@@ -124,6 +129,7 @@ export async function buildFixture(
             rolldownOptions,
           }),
       outDir: versionedOutDir,
+      ...(options.write === undefined ? {} : { write: options.write }),
     },
   } satisfies UserConfig;
 
