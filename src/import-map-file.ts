@@ -30,7 +30,7 @@ export function pluginImportMapsAsFile(
       this.emitFile({
         type: "asset",
         fileName: `${name}.json`,
-        source: buildOutput.filePlaceholder,
+        source: buildOutput.placeholder,
       });
     },
   };

@@ -3,52 +3,82 @@ import type { VitePluginImportMapsStore } from "../store.js";
 
 let importMapBuildOutputId = 0;
 
-export class ImportMapBuildOutput {
-  readonly htmlPlaceholder: string;
-  readonly filePlaceholder: string;
+export const importMapBuildMarkerAttribute = "data-vite-import-maps";
 
-  constructor() {
-    const id = importMapBuildOutputId++;
-    this.htmlPlaceholder = JSON.stringify({
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function finalizeHtmlImportMap(
+  source: string,
+  marker: string,
+  importMap: string,
+): string {
+  const escapedMarker = escapeRegExp(marker);
+  const script = new RegExp(
+    `(<script\\b(?=[^>]*\\b${importMapBuildMarkerAttribute}\\s*=\\s*["']${escapedMarker}["'])[^>]*>)[\\s\\S]*?(<\\/script\\s*>)`,
+    "gi",
+  );
+  const markerAttribute = new RegExp(
+    `\\s+${importMapBuildMarkerAttribute}\\s*=\\s*["']${escapedMarker}["']`,
+    "i",
+  );
+
+  return source.replace(
+    script,
+    (_, openingTag: string, closingTag: string) =>
+      `${openingTag.replace(markerAttribute, "")}${importMap}${closingTag}`,
+  );
+}
+
+export class ImportMapBuildOutput {
+  readonly marker: string;
+  readonly placeholder: string;
+
+  constructor(private readonly fileName?: string) {
+    this.marker = `vite-import-maps-${importMapBuildOutputId++}`;
+    this.placeholder = JSON.stringify({
       imports: {},
-      __vite_import_maps_placeholder__: `${id}:html`,
-    });
-    this.filePlaceholder = JSON.stringify({
-      imports: {},
-      __vite_import_maps_placeholder__: `${id}:file`,
+      __vite_import_maps_placeholder__: this.marker,
     });
   }
 
   finalize(bundle: OutputBundle, store: VitePluginImportMapsStore): void {
-    let importMap:
-      | ReturnType<VitePluginImportMapsStore["getImportMapAsJson"]>
-      | undefined;
+    const htmlOutputs = Object.values(bundle).filter(
+      (output) =>
+        output.type === "asset" &&
+        output.fileName.endsWith(".html") &&
+        typeof output.source === "string" &&
+        output.source.includes(this.marker),
+    );
+    const fileOutput = this.fileName ? bundle[this.fileName] : undefined;
 
-    const getImportMap = (): ReturnType<
-      VitePluginImportMapsStore["getImportMapAsJson"]
-    > => {
-      importMap ??= store.getImportMapAsJson();
-      return importMap;
-    };
+    if (htmlOutputs.length === 0 && fileOutput?.type !== "asset") {
+      return;
+    }
 
-    for (const output of Object.values(bundle)) {
-      if (output.type !== "asset" || typeof output.source !== "string") {
-        continue;
+    const importMap = store.getImportMapAsJson();
+    const compactImportMap = JSON.stringify(importMap);
+
+    for (const output of htmlOutputs) {
+      const source = output.source as string;
+      const finalized = finalizeHtmlImportMap(
+        source,
+        this.marker,
+        compactImportMap,
+      );
+
+      if (finalized === source) {
+        throw new Error(
+          `Unable to finalize the import map in ${output.fileName}`,
+        );
       }
 
-      let source = output.source;
+      output.source = finalized;
+    }
 
-      if (source.includes(this.htmlPlaceholder)) {
-        const serializedImportMap = JSON.stringify(getImportMap());
-        source = source.split(this.htmlPlaceholder).join(serializedImportMap);
-      }
-
-      if (source.includes(this.filePlaceholder)) {
-        const serializedImportMap = JSON.stringify(getImportMap(), null, 2);
-        source = source.split(this.filePlaceholder).join(serializedImportMap);
-      }
-
-      output.source = source;
+    if (fileOutput?.type === "asset") {
+      fileOutput.source = JSON.stringify(importMap, null, 2);
     }
   }
 }

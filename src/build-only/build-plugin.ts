@@ -8,14 +8,12 @@ export function pluginImportMapsBuildEnv(
   store: VitePluginImportMapsStore,
   buildOutput: ImportMapBuildOutput,
 ): Array<Plugin> {
-  const plugins: Array<Plugin> = [];
-
   for (const dep of store.sharedDependencies) {
     store.addInput(dep);
   }
 
-  plugins.push(...virtualChunksGeneratorPlugins(store, buildOutput));
-  plugins.push(virtualChunksResolverPlugin(store));
-
-  return plugins;
+  return [
+    ...virtualChunksGeneratorPlugins(store, buildOutput),
+    virtualChunksResolverPlugin(store),
+  ];
 }

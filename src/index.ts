@@ -16,7 +16,10 @@ export function viteImportMaps(
   const plugins: Array<Plugin> = [];
 
   const store = new VitePluginImportMapsStore(options);
-  const buildOutput = new ImportMapBuildOutput();
+  const outputFileName = outputAsFile
+    ? `${typeof outputAsFile === "string" ? outputAsFile : "import-map"}.json`
+    : undefined;
+  const buildOutput = new ImportMapBuildOutput(outputFileName);
 
   plugins.push(...pluginImportMapsBuildEnv(store, buildOutput));
   plugins.push(pluginImportMapsDevelopmentEnv(store));
