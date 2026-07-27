@@ -1,5 +1,4 @@
 import { pluginName } from "./config.js";
-import { importMapBuildMarkerAttribute } from "./build-only/import-map-build-output.js";
 import type { ImportMapBuildOutput } from "./build-only/import-map-build-output.js";
 import type { Plugin } from "vite";
 import type { VitePluginImportMapsStore } from "./store.js";
@@ -18,18 +17,13 @@ export function pluginImportMapsInject(
       const importMap = isBuild
         ? buildOutput.placeholder
         : JSON.stringify(store.getImportMapAsJson());
-      const attrs: Record<string, string> = { type: "importmap" };
-
-      if (isBuild) {
-        attrs[importMapBuildMarkerAttribute] = buildOutput.marker;
-      }
 
       return {
         html: source,
         tags: [
           {
             tag: "script",
-            attrs,
+            attrs: { type: "importmap" },
             children: importMap,
             injectTo: "head-prepend",
           },
