@@ -1,11 +1,15 @@
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { readFile } from "node:fs/promises";
 import crypto from "node:crypto";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   buildFixture,
   expectImportMapMatchesOutputs,
   expectSharedChunk,
+  findAssetByFileName,
+  findChunkByName,
+  parseImportMapFromHtml,
 } from "./build.test-utils.js";
 import type { ImportMap } from "./build.test-utils.js";
 
@@ -45,7 +49,7 @@ describe.each([
     expectImportMapMatchesOutputs(result, expectedImportMap);
   });
 
-  test("resolve local entries relative to the Vite root", async () => {
+  test("preserve aliases that resolve to the same local entry", async () => {
     const { buildOutput, result } = await buildFixture(
       "./fixture/local-entry/vite.config-test.js",
       version,
@@ -60,6 +64,7 @@ describe.each([
     const expectedImportMap: ImportMap = {
       imports: {
         "local-shared-lib": `./${sharedDependency.fileName}`,
+        "local-shared-lib-alias": `./${sharedDependency.fileName}`,
       },
     };
 
@@ -92,6 +97,93 @@ describe.each([
     };
 
     expectImportMapMatchesOutputs(result, expectedImportMap);
+  });
+
+  // https://github.com/riccardoperra/vite-import-maps/issues/29
+  test("GH-29 hashes final dynamic-import chunk contents", async () => {
+    const { buildOutput, result } = await buildFixture(
+      "./fixture/gh-29-with-dynamic-import-integrity/vite.config-test.js",
+      version,
+    );
+    const sharedDependency = findChunkByName(result, "@import-maps/shared-lib");
+    const htmlAsset = findAssetByFileName(result, "index.html");
+    const importMapAsset = findAssetByFileName(result, "import-map.json");
+    const htmlSource = await readFile(
+      path.join(buildOutput, htmlAsset.fileName),
+      "utf8",
+    );
+    const importMapSource = await readFile(
+      path.join(buildOutput, importMapAsset.fileName),
+      "utf8",
+    );
+    const htmlImportMap = parseImportMapFromHtml(htmlAsset);
+    const fileImportMap = JSON.parse(importMapSource) as ImportMap;
+    const sharedDependencyUrl = `./${sharedDependency.fileName}`;
+    const emittedContents = await readFile(
+      path.join(buildOutput, sharedDependencyUrl.slice(2)),
+    );
+    const expectedIntegrity = `sha384-${crypto
+      .createHash("sha384")
+      .update(emittedContents)
+      .digest("base64")}`;
+
+    expect(String(htmlAsset.source)).toBe(htmlSource);
+    expect(String(importMapAsset.source)).toBe(importMapSource);
+    expect(htmlSource).not.toContain("__vite_import_maps_placeholder__");
+    expect(importMapSource).not.toContain("__vite_import_maps_placeholder__");
+    expect(htmlSource).not.toContain("data-vite-import-maps");
+    expect(importMapSource).not.toContain("data-vite-import-maps");
+    expect(htmlSource).not.toContain("vite-import-maps-");
+    expect(importMapSource).not.toContain("vite-import-maps-");
+    expect(String(emittedContents)).toContain("__vite__mapDeps");
+    expect(String(emittedContents)).not.toContain("__VITE_PRELOAD__");
+    expect(htmlImportMap).toEqual({
+      imports: {
+        "shared-lib": sharedDependencyUrl,
+      },
+      integrity: {
+        [sharedDependencyUrl]: expectedIntegrity,
+      },
+    });
+    expect(fileImportMap).toEqual(htmlImportMap);
+  });
+
+  test("GH-29 hashes final in-memory dynamic-import chunk contents", async () => {
+    const { result } = await buildFixture(
+      "./fixture/gh-29-with-dynamic-import-integrity/vite.config-test.js",
+      version,
+      { write: false },
+    );
+    const sharedDependency = findChunkByName(result, "@import-maps/shared-lib");
+    const htmlAsset = findAssetByFileName(result, "index.html");
+    const importMapAsset = findAssetByFileName(result, "import-map.json");
+    const htmlSource = String(htmlAsset.source);
+    const importMapSource = String(importMapAsset.source);
+    const htmlImportMap = parseImportMapFromHtml(htmlAsset);
+    const fileImportMap = JSON.parse(importMapSource) as ImportMap;
+    const sharedDependencyUrl = `./${sharedDependency.fileName}`;
+    const expectedIntegrity = `sha384-${crypto
+      .createHash("sha384")
+      .update(sharedDependency.code)
+      .digest("base64")}`;
+
+    expect(htmlSource).not.toContain("__vite_import_maps_placeholder__");
+    expect(importMapSource).not.toContain("__vite_import_maps_placeholder__");
+    expect(htmlSource).not.toContain("data-vite-import-maps");
+    expect(importMapSource).not.toContain("data-vite-import-maps");
+    expect(htmlSource).not.toContain("vite-import-maps-");
+    expect(importMapSource).not.toContain("vite-import-maps-");
+    expect(sharedDependency.code).toContain("__vite__mapDeps");
+    expect(sharedDependency.code).not.toContain("__VITE_PRELOAD__");
+    expect(htmlImportMap).toEqual({
+      imports: {
+        "shared-lib": sharedDependencyUrl,
+      },
+      integrity: {
+        [sharedDependencyUrl]: expectedIntegrity,
+      },
+    });
+    expect(fileImportMap).toEqual(htmlImportMap);
   });
 
   test.skipIf(version < 8)(

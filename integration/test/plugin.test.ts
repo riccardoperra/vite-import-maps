@@ -58,10 +58,17 @@ describe("virtual:importmap", () => {
 
 describe("development import maps", () => {
   test("falls back with a warning when the dependency optimizer is unavailable", async () => {
-    const plugins = viteImportMaps({ imports: ["shared-lib"] });
+    const plugins = viteImportMaps({
+      imports: ["shared-lib"],
+      integrity: "sha384",
+    });
     const developmentPlugin = findPlugin(
       plugins,
       "vite-import-maps:development",
+    );
+    const htmlPlugin = findPlugin(
+      plugins,
+      "vite-import-maps:inject-html-import-map",
     );
     const virtualModulePlugin = findPlugin(
       plugins,
@@ -91,8 +98,29 @@ describe("development import maps", () => {
       await developmentPlugin.transformIndexHtml.call({}, "", { server });
     }
 
+    if (typeof htmlPlugin.transformIndexHtml !== "function") {
+      throw new TypeError("Expected a transformIndexHtml hook");
+    }
+
+    // @ts-expect-error Minimal dev-server mock for isolated plugin testing.
+    const transformedHtml = await htmlPlugin.transformIndexHtml.call({}, "", {
+      server,
+    });
+
     expect(warn).toHaveBeenCalledOnce();
     expect(resolveId).toHaveBeenCalledTimes(2);
+    expect(transformedHtml).toEqual({
+      html: "",
+      tags: [
+        {
+          tag: "script",
+          attrs: { type: "importmap" },
+          children:
+            '{"imports":{"shared-lib":"/node_modules/shared-lib/index.js"}}',
+          injectTo: "head-prepend",
+        },
+      ],
+    });
 
     const code = await loadVirtualImportMap(virtualModulePlugin);
     const module = await import(

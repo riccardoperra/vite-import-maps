@@ -1,15 +1,22 @@
 import { pluginName } from "./config.js";
+import type { ImportMapBuildOutput } from "./build-only/import-map-build-output.js";
 import type { Plugin } from "vite";
 import type { VitePluginImportMapsStore } from "./store.js";
 
 export function pluginImportMapsInject(
   store: VitePluginImportMapsStore,
+  buildOutput: ImportMapBuildOutput,
 ): Plugin {
   const name = pluginName("inject-html-import-map");
   return {
     name,
-    transformIndexHtml(source) {
-      const importMap = store.getImportMapAsJson();
+    transformIndexHtml(source, { bundle }) {
+      // Development has no generated chunks to hash. Build output is filled
+      // after Vite finishes rewriting chunks in generateBundle.
+      const isBuild = bundle !== undefined;
+      const importMap = isBuild
+        ? buildOutput.placeholder
+        : JSON.stringify(store.getImportMapAsJson());
 
       return {
         html: source,
@@ -17,7 +24,7 @@ export function pluginImportMapsInject(
           {
             tag: "script",
             attrs: { type: "importmap" },
-            children: JSON.stringify(importMap),
+            children: importMap,
             injectTo: "head-prepend",
           },
         ],

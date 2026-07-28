@@ -4,28 +4,37 @@ import { styleText } from "node:util";
 import { createLogger } from "vite";
 import { pluginName } from "../config.js";
 import { isAbsolute, normalizePath } from "../utils.js";
-import {
-  VIRTUAL_ID_PREFIX,
-  getVirtualFileName,
-} from "./virtual-chunk-resolver.js";
+import { getVirtualFileName } from "./virtual-chunk-resolver.js";
+import type { ImportMapBuildOutput } from "./import-map-build-output.js";
 import type {
   ImportMapBuildChunkEntrypoint,
   VitePluginImportMapsStore,
 } from "../store.js";
 import type { Plugin } from "vite";
 
-export function virtualChunksGeneratorPlugin(
+function calculateIntegrity(
+  integrityConfig: ImportMapBuildChunkEntrypoint["integrity"],
+  code: string,
+): string | undefined {
+  if (integrityConfig === false) return;
+
+  const algorithm =
+    typeof integrityConfig === "string" ? integrityConfig : "sha384";
+  return `${algorithm}-${createHash(algorithm).update(code).digest("base64")}`;
+}
+
+export function virtualChunksGeneratorPlugins(
   store: VitePluginImportMapsStore,
-): Plugin {
+  buildOutput: ImportMapBuildOutput,
+): Array<Plugin> {
   const name = pluginName("build:virtual");
-  const virtualModules = new Map<string, ImportMapBuildChunkEntrypoint>();
-  const localModules = new Map<string, ImportMapBuildChunkEntrypoint>();
+  const modules = new Map<string, Array<ImportMapBuildChunkEntrypoint>>();
   const logger = createLogger(undefined, {
     prefix: name,
   });
   let root = process.cwd();
 
-  return {
+  const generator: Plugin = {
     name,
     apply: "build",
     configResolved(config) {
@@ -33,106 +42,90 @@ export function virtualChunksGeneratorPlugin(
     },
     buildStart() {
       logger.info("Emit chunks for exposed dependencies", { timestamp: true });
+      modules.clear();
+
       for (const input of store.inputs) {
-        if (input.localFile) {
-          // a local file doesn't have to be handled like a virtual
-          // since I expect their source is already correct and doesn't
-          // need to be transformed
-          const id = isAbsolute(input.idToResolve)
+        const id = input.localFile
+          ? isAbsolute(input.idToResolve)
             ? normalizePath(input.idToResolve)
-            : normalizePath(path.resolve(root, input.idToResolve));
-          if (!localModules.has(id)) {
-            if (store.log) {
-              console.info(
-                `   ${styleText("cyanBright", `${input.normalizedDependencyName}:`)} %s`,
-                id,
-              );
-            }
+            : normalizePath(path.resolve(root, input.idToResolve))
+          : getVirtualFileName(input.normalizedDependencyName);
+        const registeredInputs = modules.get(id);
 
-            this.emitFile({
-              type: "chunk",
-              name: input.entrypoint,
-              id,
-              preserveSignature: "strict",
-            });
-          }
-          localModules.set(id, input);
-        } else {
-          const id = getVirtualFileName(input.normalizedDependencyName);
-          if (!virtualModules.has(id)) {
-            if (store.log) {
-              console.info(
-                `   ${styleText("cyanBright", `${input.normalizedDependencyName}`)} %s`,
-                id,
-              );
-            }
-
-            this.emitFile({
-              type: "chunk",
-              name: input.entrypoint,
-              id,
-              preserveSignature: "strict",
-            });
-          }
-          virtualModules.set(id, input);
+        if (registeredInputs) {
+          registeredInputs.push(input);
+          continue;
         }
-      }
-    },
-    // We'll get here the final name of the generated chunk
-    // to track the import-maps dependencies
-    generateBundle(_, bundle) {
-      store.clearDependencies();
-      logger.info("Collect dependencies and generate import map", {
-        timestamp: true,
-      });
 
-      const keys = Object.keys(bundle);
-      for (const key of keys) {
-        const entry = bundle[key];
-        if (entry.type !== "chunk") continue;
-
-        const handledModules = new Map([
-          ...virtualModules.entries(),
-          ...localModules.entries(),
-        ]);
-
-        if (
-          entry.facadeModuleId &&
-          (entry.facadeModuleId.startsWith(VIRTUAL_ID_PREFIX) ||
-            isAbsolute(entry.facadeModuleId))
-        ) {
-          const facadeModuleId = normalizePath(entry.facadeModuleId);
-          const entryImportMap = handledModules.get(facadeModuleId);
-          if (!entryImportMap) continue;
-
-          // TODO: https://vite.dev/guide/backend-integration
-          entry.isEntry = false;
-
-          let integrity: string | undefined;
-          if (entryImportMap.integrity !== false) {
-            const algorithm =
-              typeof entryImportMap.integrity === "string"
-                ? entryImportMap.integrity
-                : "sha384";
-            integrity = `${algorithm}-${createHash(algorithm)
-              .update(entry.code)
-              .digest("base64")}`;
-          }
-
-          const url = `./${entry.fileName}`,
-            packageName = entryImportMap.originalDependencyName;
-          store.addDependency({ url, packageName, integrity });
-        }
-      }
-
-      if (store.log) {
-        store.importMapDependencies.forEach((value, key) => {
+        modules.set(id, [input]);
+        if (store.log) {
           console.info(
-            `   ${styleText("cyanBright", `${key}:`)} %s`,
-            value.url,
+            `   ${styleText("cyanBright", `${input.normalizedDependencyName}:`)} %s`,
+            id,
           );
+        }
+
+        this.emitFile({
+          type: "chunk",
+          name: input.entrypoint,
+          id,
+          preserveSignature: "strict",
         });
       }
     },
+    generateBundle(_, bundle) {
+      logger.info("Prepare chunks for import map", {
+        timestamp: true,
+      });
+
+      for (const output of Object.values(bundle)) {
+        if (output.type !== "chunk" || !output.facadeModuleId) continue;
+        const inputs = modules.get(normalizePath(output.facadeModuleId));
+        if (!inputs) continue;
+
+        // TODO: https://vite.dev/guide/backend-integration
+        output.isEntry = false;
+      }
+    },
   };
+
+  const finalizer: Plugin = {
+    name: pluginName("build:finalize"),
+    apply: "build",
+    generateBundle: {
+      order: "post",
+      handler(_, bundle) {
+        // Vite can still rewrite dynamic-import preload dependencies in its
+        // normal generateBundle hooks, so integrity must be calculated here.
+        store.clearDependencies();
+
+        for (const output of Object.values(bundle)) {
+          if (output.type !== "chunk" || !output.facadeModuleId) continue;
+          const inputs = modules.get(normalizePath(output.facadeModuleId));
+          if (!inputs) continue;
+
+          for (const input of inputs) {
+            store.addDependency({
+              packageName: input.originalDependencyName,
+              url: `./${output.fileName}`,
+              integrity: calculateIntegrity(input.integrity, output.code),
+            });
+          }
+        }
+
+        if (store.log) {
+          store.importMapDependencies.forEach((value, key) => {
+            console.info(
+              `   ${styleText("cyanBright", `${key}:`)} %s`,
+              value.url,
+            );
+          });
+        }
+
+        buildOutput.finalize(bundle, store);
+      },
+    },
+  };
+
+  return [generator, finalizer];
 }

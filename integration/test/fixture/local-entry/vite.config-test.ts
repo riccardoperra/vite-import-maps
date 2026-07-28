@@ -25,7 +25,10 @@ export default {
   },
   plugins: [
     viteImportMaps({
-      imports: [{ name: "local-shared-lib", entry: "./shared-lib.ts" }],
+      imports: [
+        { name: "local-shared-lib", entry: "./shared-lib.ts" },
+        { name: "local-shared-lib-alias", entry: "./shared-lib.ts" },
+      ],
       modulesOutDir: "@import-maps",
     }),
   ],

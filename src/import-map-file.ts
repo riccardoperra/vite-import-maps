@@ -1,4 +1,5 @@
 import { pluginName } from "./config.js";
+import type { ImportMapBuildOutput } from "./build-only/import-map-build-output.js";
 import type { Plugin } from "vite";
 import type { VitePluginImportMapsStore } from "./store.js";
 
@@ -9,6 +10,7 @@ interface PluginImportMapsAsFileOptions {
 export function pluginImportMapsAsFile(
   store: VitePluginImportMapsStore,
   options: PluginImportMapsAsFileOptions,
+  buildOutput: ImportMapBuildOutput,
 ): Plugin {
   const { name = "import-map" } = options;
 
@@ -25,12 +27,10 @@ export function pluginImportMapsAsFile(
       });
     },
     generateBundle() {
-      const json = store.getImportMapAsJson();
-
       this.emitFile({
         type: "asset",
         fileName: `${name}.json`,
-        source: JSON.stringify(json, null, 2),
+        source: buildOutput.placeholder,
       });
     },
   };
