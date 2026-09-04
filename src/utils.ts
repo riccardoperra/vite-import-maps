@@ -1,6 +1,6 @@
 import * as path from "node:path";
 
-export const isWindows = process.platform === "win32";
+export const isWindows: boolean = process.platform === "win32";
 
 /**
  * Normalize a dependency name to be used as an entrypoint input
@@ -32,7 +32,7 @@ export function fileToUrl(file: string, root: string): string {
   return "/" + normalizePath(url);
 }
 
-export function isLocalEntry(url: string) {
+export function isLocalEntry(url: string): boolean {
   return url.startsWith("./") || url.startsWith("../") || isAbsolute(url);
 }
 
@@ -41,7 +41,7 @@ export function slash(p: string): string {
   return p.replace(windowsSlashRE, "/");
 }
 
-export function isAbsolute(id: string) {
+export function isAbsolute(id: string): boolean {
   return path.posix.isAbsolute(id) || path.win32.isAbsolute(id);
 }
 

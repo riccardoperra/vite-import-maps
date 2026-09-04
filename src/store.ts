@@ -35,6 +35,15 @@ export class VitePluginImportMapsStore {
   readonly importMapDependencies: Map<string, RegisteredDependency> = new Map();
 
   readonly inputs: Array<ImportMapBuildChunkEntrypoint> = [];
+  private developmentResolver?: () => Promise<void>;
+
+  setDevelopmentResolver(resolver: () => Promise<void>): void {
+    this.developmentResolver = resolver;
+  }
+
+  async resolveDevelopmentDependencies(): Promise<void> {
+    await this.developmentResolver?.();
+  }
 
   constructor(options: VitePluginImportMapsConfig) {
     this.defaultIntegrity = options.integrity || false;
@@ -124,9 +133,9 @@ export class VitePluginImportMapsStore {
     return meta;
   }
 
-  getImportMapAsJson(): Record<string, any> {
-    const imports = {} as Record<string, string>;
-    const integrity = {} as Record<string, string>;
+  getImportMapAsJson(): ImportMapSignature {
+    const imports: Record<string, string> = Object.create(null);
+    const integrity: Record<string, string> = Object.create(null);
     this.importMapDependencies.forEach((dep) => {
       imports[dep.packageName] = dep.url;
       if (dep.integrity) {

@@ -15,7 +15,7 @@ export function isCommonJsFile(fileName: string): boolean {
 let cjsInit = false;
 export async function collectStaticCommonJsExports(
   fileName: string,
-  seen = new Set<string>(),
+  seen: Set<string> = new Set<string>(),
 ): Promise<Set<string>> {
   const require = createRequire(import.meta.url);
   if (seen.has(fileName)) {
@@ -43,7 +43,9 @@ export async function collectStaticCommonJsExports(
   return names;
 }
 
-export async function collectCommonJsNamedExports(fileName: string) {
+export async function collectCommonJsNamedExports(
+  fileName: string,
+): Promise<Array<string>> {
   if (!cjsInit) {
     await init();
     cjsInit = true;

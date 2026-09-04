@@ -1,4 +1,5 @@
 import { pluginName } from "./config.js";
+import { serializeImportMap } from "./serialize.js";
 import type { VitePluginImportMapsStore } from "./store.js";
 import type { Plugin } from "vite";
 
@@ -17,12 +18,13 @@ export function pluginImportMapsAsModule(
         return resolvedVirtualImportMapId;
       }
     },
-    load(id) {
+    async load(id) {
       if (id === resolvedVirtualImportMapId) {
-        const content = JSON.stringify(store.getImportMapAsJson());
+        await store.resolveDevelopmentDependencies();
+        const content = serializeImportMap(store.getImportMapAsJson());
         return `
           export const importMapRaw = ${JSON.stringify(content)};
-          export const importMap = ${content};
+          export const importMap = JSON.parse(importMapRaw);
           export default importMap;
         `;
       }
