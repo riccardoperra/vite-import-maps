@@ -45,7 +45,7 @@ export function virtualChunksGeneratorPlugins(
       modules.clear();
 
       for (const input of store.inputs) {
-        const id = input.localFile
+        let id = input.localFile
           ? isAbsolute(input.idToResolve)
             ? normalizePath(input.idToResolve)
             : normalizePath(path.resolve(root, input.idToResolve))
@@ -53,8 +53,13 @@ export function virtualChunksGeneratorPlugins(
         const registeredInputs = modules.get(id);
 
         if (registeredInputs) {
-          registeredInputs.push(input);
-          continue;
+          if (registeredInputs[0].integrity === input.integrity) {
+            registeredInputs.push(input);
+            continue;
+          }
+          // Integrity is keyed by URL. Aliases with different policies need
+          // separate facades so one alias cannot overwrite another's hash.
+          id = getVirtualFileName(input.normalizedDependencyName);
         }
 
         modules.set(id, [input]);
