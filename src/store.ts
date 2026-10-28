@@ -134,14 +134,16 @@ export class VitePluginImportMapsStore {
   }
 
   getImportMapAsJson(): ImportMapSignature {
-    const imports: Record<string, string> = Object.create(null);
-    const integrity: Record<string, string> = Object.create(null);
-    this.importMapDependencies.forEach((dep) => {
-      imports[dep.packageName] = dep.url;
-      if (dep.integrity) {
-        integrity[dep.url] = dep.integrity;
-      }
-    });
+    const dependencies = [...this.importMapDependencies.values()];
+    // Create ordinary objects while preserving own keys such as __proto__.
+    const imports: Record<string, string> = Object.fromEntries(
+      dependencies.map((dep) => [dep.packageName, dep.url]),
+    );
+    const integrity: Record<string, string> = Object.fromEntries(
+      dependencies.flatMap((dep) =>
+        dep.integrity ? [[dep.url, dep.integrity]] : [],
+      ),
+    );
 
     const importMap: ImportMapSignature = {
       imports,

@@ -1,5 +1,6 @@
 import { describe, expect, test, vi } from "vitest";
 import { viteImportMaps } from "../../src/index.js";
+import { VitePluginImportMapsStore } from "../../src/store.js";
 import type { Plugin } from "vite";
 
 function findPlugin(plugins: Array<Plugin>, name: string): Plugin {
@@ -21,6 +22,43 @@ async function loadVirtualImportMap(plugin: Plugin) {
   // @ts-expect-error Direct hook invocation for isolated plugin testing.
   return plugin.load.call({}, resolvedId);
 }
+
+test("passes ordinary objects to transformers while preserving special keys", () => {
+  const transform = vi.fn((map) => {
+    for (const dictionary of [map.imports, map.integrity]) {
+      expect(Object.getPrototypeOf(dictionary)).toBe(Object.prototype);
+      expect(dictionary.hasOwnProperty).toBe(Object.prototype.hasOwnProperty);
+      expect(Object.hasOwn(dictionary, "__proto__")).toBe(true);
+    }
+    return map;
+  });
+  const store = new VitePluginImportMapsStore({
+    imports: [],
+    importMapHtmlTransformer: transform,
+  });
+  store.addDependency({
+    packageName: "api",
+    url: "./api.js",
+    integrity: "sha256-api",
+  });
+  store.addDependency({
+    packageName: "__proto__",
+    url: "__proto__",
+    integrity: "sha256-prototype",
+  });
+
+  const map = store.getImportMapAsJson();
+  const expected = {
+    imports: { api: "./api.js", ["__proto__"]: "__proto__" },
+    integrity: {
+      "./api.js": "sha256-api",
+      ["__proto__"]: "sha256-prototype",
+    },
+  };
+  expect(transform).toHaveBeenCalledOnce();
+  expect(map).toEqual(expected);
+  expect(JSON.parse(JSON.stringify(map))).toEqual(expected);
+});
 
 describe("virtual:importmap", () => {
   test("safely serializes raw import maps", async () => {
