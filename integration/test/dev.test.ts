@@ -146,5 +146,5 @@ test("reports the specifier, entry, and root for unresolved development dependen
   expect(response.status).toBe(500);
   const body = await response.text();
   expect(body).toContain("missing-api");
-  expect(body).toContain(root);
+  expect(body).toContain(server.config.root);
 });
