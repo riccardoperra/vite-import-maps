@@ -49,6 +49,7 @@ test("virtual exports preserve special keys and provide JSON safe for inline scr
   // @ts-expect-error Direct hook invocation for isolated plugin testing.
   const code = await plugin.load.call({}, id);
   expect(typeof code).toBe("string");
+  expect(code).not.toContain("JSON.parse");
 
   const module = await import(
     `data:text/javascript,${encodeURIComponent(String(code))}`

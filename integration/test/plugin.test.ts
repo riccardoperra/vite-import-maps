@@ -1,4 +1,6 @@
 import { describe, expect, test, vi } from "vitest";
+import { rollup } from "rollup";
+import { rolldown } from "rolldown";
 import { viteImportMaps } from "../../src/index.js";
 import { VitePluginImportMapsStore } from "../../src/store.js";
 import type { Plugin } from "vite";
@@ -61,6 +63,53 @@ test("passes ordinary objects to transformers while preserving special keys", ()
 });
 
 describe("virtual:importmap", () => {
+  test.each([
+    ["Rollup", rollup],
+    ["Rolldown", rolldown],
+  ] as const)(
+    "%s emits static virtual-module exports without runtime parsing",
+    async (_, build) => {
+      const plugin = findPlugin(
+        viteImportMaps({
+          imports: [],
+          importMapHtmlTransformer: () => ({
+            imports: { ["__proto__"]: "./prototype.js" },
+          }),
+        }),
+        "vite-import-maps:virtual-module-import-map",
+      );
+      const code = await loadVirtualImportMap(plugin);
+      const bundle = await build({
+        input: "entry",
+        plugins: [
+          {
+            name: "raw-import-map-consumer",
+            resolveId: (id) => id,
+            load: (id) =>
+              id === "entry"
+                ? 'export { importMapRaw, importMap } from "virtual:importmap";'
+                : String(code),
+          },
+        ],
+      });
+      try {
+        const { output } = await bundle.generate({ format: "es" });
+        const chunk = output[0];
+        const module = await import(
+          `data:text/javascript,${encodeURIComponent(chunk.code)}`
+        );
+        expect(module.importMap).toEqual({
+          imports: { ["__proto__"]: "./prototype.js" },
+        });
+        expect(Object.hasOwn(module.importMap.imports, "__proto__")).toBe(true);
+        expect(JSON.parse(module.importMapRaw)).toEqual(module.importMap);
+        expect(chunk.code).not.toContain("JSON.parse");
+      } finally {
+        await bundle.close();
+      }
+    },
+  );
+
   test("safely serializes raw import maps", async () => {
     const plugins = viteImportMaps({
       imports: [],

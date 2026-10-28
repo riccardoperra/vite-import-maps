@@ -16,6 +16,7 @@ Add typed import-map APIs and resolve development maps on demand.
 - Accept query strings on the development JSON endpoint and send `Cache-Control: no-cache`.
 - Fix production package aliases to expose their configured entry and preserve default exports. Local aliases with matching integrity settings continue sharing a URL; different settings produce separate facades so their integrity metadata cannot overwrite each other.
 - Escape inline import-map JSON and `importMapRaw` for safe embedding in HTML. Preserve special keys such as `__proto__`, while continuing to pass ordinary objects to custom transformers.
+- Generate the virtual module's map as a JavaScript object literal, with no JSON parsing at runtime.
 - Declare `cjs-module-lexer` as a runtime dependency so installed packages can load the distributed plugin.
 - Expand the README with setup examples, configuration recipes, and SSR guidance.
 

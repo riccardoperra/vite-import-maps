@@ -135,7 +135,6 @@ export class VitePluginImportMapsStore {
 
   getImportMapAsJson(): ImportMapSignature {
     const dependencies = [...this.importMapDependencies.values()];
-    // Create ordinary objects while preserving own keys such as __proto__.
     const imports: Record<string, string> = Object.fromEntries(
       dependencies.map((dep) => [dep.packageName, dep.url]),
     );

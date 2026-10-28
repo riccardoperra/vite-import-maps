@@ -1,5 +1,5 @@
 import { pluginName } from "./config.js";
-import { serializeImportMap } from "./serialize.js";
+import { importMapJsonToJavaScript, serializeImportMap } from "./serialize.js";
 import type { VitePluginImportMapsStore } from "./store.js";
 import type { Plugin } from "vite";
 
@@ -24,7 +24,7 @@ export function pluginImportMapsAsModule(
         const content = serializeImportMap(store.getImportMapAsJson());
         return `
           export const importMapRaw = ${JSON.stringify(content)};
-          export const importMap = JSON.parse(importMapRaw);
+          export const importMap = ${importMapJsonToJavaScript(content)};
           export default importMap;
         `;
       }
