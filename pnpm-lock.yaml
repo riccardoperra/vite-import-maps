@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      cjs-module-lexer:
+        specifier: ^2.2.0
+        version: 2.2.0
       rolldown:
         specifier: '>=1.0.0-rc.0'
         version: 1.0.0-rc.15
@@ -21,9 +24,6 @@ importers:
       '@types/node':
         specifier: ^25.5.0
         version: 25.5.0
-      cjs-module-lexer:
-        specifier: ^2.2.0
-        version: 2.2.0
       eslint:
         specifier: ^10.2.0
         version: 10.2.0(jiti@2.6.1)

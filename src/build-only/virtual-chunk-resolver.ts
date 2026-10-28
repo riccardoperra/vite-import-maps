@@ -1,7 +1,8 @@
-import path from "node:path/posix";
+import path from "node:path";
 import { styleText } from "node:util";
 import { createLogger } from "vite";
 import { pluginName } from "../config.js";
+import { isAbsolute, normalizePath } from "../utils.js";
 import {
   buildCommonJsWrapperCode,
   collectCommonJsNamedExports,
@@ -15,7 +16,7 @@ import type {
 
 export const VIRTUAL_ID_PREFIX = `\0virtual:import-map-chunk`;
 
-export function getVirtualFileName(name: string) {
+export function getVirtualFileName(name: string): string {
   return `${VIRTUAL_ID_PREFIX}/${name}`;
 }
 
@@ -26,10 +27,14 @@ export function virtualChunksResolverPlugin(
   const logger = createLogger(store.log ? "info" : "silent", {
     prefix: name,
   });
+  let root = process.cwd();
 
   return {
     name,
     apply: "build",
+    configResolved(config) {
+      root = config.root;
+    },
     resolveId(this, id) {
       if (this.environment.name === "ssr") return;
       if (id.startsWith(VIRTUAL_ID_PREFIX)) {
@@ -57,7 +62,14 @@ export function virtualChunksResolverPlugin(
         "info"
       ] as ImportMapBuildChunkEntrypoint;
 
-      const resolvedId = await this.resolve(chunk.idToResolve);
+      const entry = chunk.localFile
+        ? normalizePath(
+            isAbsolute(chunk.idToResolve)
+              ? chunk.idToResolve
+              : path.resolve(root, chunk.idToResolve),
+          )
+        : chunk.idToResolve;
+      const resolvedId = await this.resolve(entry);
 
       if (!resolvedId) {
         logger.warn(`Could not resolve dependency for ${chunk.idToResolve}`, {
@@ -68,12 +80,12 @@ export function virtualChunksResolverPlugin(
 
       const [_fileName] = resolvedId.id.split("?");
       const fileName = _fileName;
-      const moduleInfo =
-        this.getModuleInfo(fileName) ??
-        (await this.load({
-          id: fileName,
-          resolveDependencies: true,
-        }));
+      // Another alias may have started loading this module already. Wait for
+      // its exports to be available before deciding whether to expose default.
+      const moduleInfo = await this.load({
+        id: fileName,
+        resolveDependencies: true,
+      });
 
       const isCjs =
         isVite8CommonJsModule(moduleInfo.inputFormat, fileName) ||
@@ -81,7 +93,7 @@ export function virtualChunksResolverPlugin(
         ("commonjs" in moduleInfo.meta &&
           moduleInfo.meta.commonjs.isCommonJS !== false);
 
-      const dependencyName = JSON.stringify(chunk.originalDependencyName);
+      const dependencyName = JSON.stringify(entry);
       let code = `export * from ${dependencyName};`;
 
       if (moduleInfo.exports.includes("default")) {
@@ -92,11 +104,7 @@ export function virtualChunksResolverPlugin(
         const commonJsNamedExports =
           await collectCommonJsNamedExports(fileName);
 
-        code = buildCommonJsWrapperCode(
-          chunk.originalDependencyName,
-          fileName,
-          commonJsNamedExports,
-        );
+        code = buildCommonJsWrapperCode(entry, fileName, commonJsNamedExports);
       }
 
       if (store.log) {
