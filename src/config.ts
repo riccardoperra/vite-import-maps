@@ -13,15 +13,23 @@ export interface ImportMapSignature {
   /**
    * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap#imports
    */
-  imports?: Record<string, any>;
+  imports?: Record<string, string>;
   /**
    * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap#integrity
    */
   integrity?: Record<string, string>;
   /**
-   * @see @see https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap#scopes
+   * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap#scopes
    */
-  scopes?: Record<string, any>;
+  scopes?: Record<string, Record<string, string>>;
+}
+
+export interface ImportMapScriptAttributes {
+  /** Content Security Policy nonce for the injected inline script. */
+  nonce?: string;
+  /** DOM identifier for the injected inline script. */
+  id?: string;
+  [attribute: `data-${string}`]: string | undefined;
 }
 
 export type ImportMapTransformerFn = (
@@ -79,12 +87,15 @@ export interface VitePluginImportMapsConfig {
   /**
    * Whether to inject the import map in to the main HTML file. Defaults to true.
    *
-   * NOTE: You probably have to set `false` in apps with SSR enabled,
-   * and use the `virtual:importmap` dynamic import instead.
+   * For server-rendered HTML, disable this and render the script yourself.
+   * Use `virtual:importmap` in development and emitted JSON from the client
+   * build in production, after final chunk filenames have been generated.
    */
   injectImportMapsToHtml?: boolean;
+  /** Attributes for the injected import-map script. Ignored when HTML injection is disabled. */
+  importMapScriptAttributes?: ImportMapScriptAttributes;
   /**
-   * Transform the resolved import map `imports` before writing it to the HTML file
+   * Transform the complete resolved map for HTML, virtual-module, and JSON output.
    */
   importMapHtmlTransformer?: ImportMapTransformerFn;
   /**

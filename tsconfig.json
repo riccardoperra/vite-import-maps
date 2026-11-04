@@ -11,9 +11,10 @@
     "noEmit": true,
     "verbatimModuleSyntax": true,
     "isolatedDeclarations": true,
+    "declaration": true,
     "erasableSyntaxOnly": true,
     "isolatedModules": true
   },
-  "include": ["src", "test"],
+  "include": ["src", "client.d.ts"],
   "exclude": ["examples"]
 }

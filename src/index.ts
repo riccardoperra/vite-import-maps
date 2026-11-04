@@ -8,6 +8,16 @@ import { pluginImportMapsAsModule } from "./import-map-module.js";
 import type { VitePluginImportMapsConfig } from "./config.js";
 import type { Plugin } from "vite";
 
+export type {
+  DependencyIntegrityCheck,
+  ImportMapScriptAttributes,
+  ImportMapSignature,
+  ImportMapTransformerFn,
+  SharedDependencyConfig,
+  SharedDependencyObjectConfig,
+  VitePluginImportMapsConfig,
+} from "./config.js";
+
 export function viteImportMaps(
   options: VitePluginImportMapsConfig,
 ): Array<Plugin> {
@@ -22,7 +32,13 @@ export function viteImportMaps(
   plugins.push(pluginImportMapsDevelopmentEnv(store));
 
   if (injectImportMapsToHtml) {
-    plugins.push(pluginImportMapsInject(store, buildOutput));
+    plugins.push(
+      pluginImportMapsInject(
+        store,
+        buildOutput,
+        options.importMapScriptAttributes,
+      ),
+    );
   }
 
   plugins.push(pluginImportMapsAsModule(store));

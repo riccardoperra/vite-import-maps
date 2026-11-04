@@ -17,13 +17,21 @@ export function pluginImportMapsAsFile(
   return {
     name: pluginName("import-maps-as-file"),
     configureServer(server) {
+      const url = `${server.config.base}${name}.json`;
       server.middlewares.use((req, res, next) => {
-        if (req.url === `/${name}.json`) {
-          res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify(store.getImportMapAsJson()));
-        } else {
+        if (req.url?.split("?", 1)[0] !== url) {
           next();
+          return;
         }
+
+        void store
+          .resolveDevelopmentDependencies()
+          .then(() => {
+            res.setHeader("Content-Type", "application/json; charset=utf-8");
+            res.setHeader("Cache-Control", "no-cache");
+            res.end(JSON.stringify(store.getImportMapAsJson()));
+          })
+          .catch(next);
       });
     },
     generateBundle() {
